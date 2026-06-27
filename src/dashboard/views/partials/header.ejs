@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title><%= typeof title !== 'undefined' ? title : botName %> — Dashboard</title>
+  <link rel="stylesheet" href="/css/style.css" />
+  <% if (botAvatar) { %><link rel="icon" href="<%= botAvatar %>" /><% } %>
+</head>
+<body>
+  <nav class="navbar">
+    <a class="brand" href="/">
+      <% if (botAvatar) { %><img src="<%= botAvatar %>" alt="" class="brand-icon" /><% } %>
+      <span><%= botName %></span>
+    </a>
+    <div class="nav-links">
+      <a href="/" class="<%= path === '/' ? 'active' : '' %>">Home</a>
+      <% if (user) { %>
+        <a href="/servers" class="<%= path.startsWith('/servers') ? 'active' : '' %>">Servers</a>
+        <div class="nav-user">
+          <img src="<%= user.avatar %>" alt="" class="nav-avatar" />
+          <span><%= user.global_name || user.username %></span>
+          <a href="/logout" class="logout">Logout</a>
+        </div>
+      <% } else { %>
+        <a href="/login" class="btn btn-primary btn-sm">Login with Discord</a>
+      <% } %>
+    </div>
+  </nav>
+  <main class="container">

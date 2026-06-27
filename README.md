@@ -59,6 +59,14 @@ and automatic drawing when the timer expires.
 `8ball` · `roll` · `flip` · `rps` · `trivia` · `guess` · `choose` · `mock` · `reverse` · `joke` ·
 `fact` · `wyr` · `ship` · `compliment`
 
+### 🖥️ Web Dashboard
+An optional browser dashboard (embedded in the bot process) for configuring servers without slash commands:
+- **Discord OAuth2 login** — see only the servers you have *Manage Server* on
+- **Live config editor** — welcome/goodbye, logging channels, autorole, leveling, economy, starboard, suggestions and every automod filter, with channel/role dropdowns pulled live from your server
+- **Per-server leaderboards** — top levels & richest members
+- Changes apply **instantly** (the dashboard shares the bot's database and config cache)
+- Responsive dark theme, CSRF-protected forms
+
 ### ⚙️ Configuration & Engagement Systems
 - `/config` — one hub for prefix, welcome/goodbye, logging channels, autorole, starboard, suggestions & more
 - **Starboard** — pin popular messages by ⭐ reactions
@@ -114,7 +122,22 @@ npm start      # production
 npm run dev    # auto-restart on file changes (node --watch)
 ```
 
-### 7. Invite the bot
+### 7. (Optional) Enable the web dashboard
+In `.env` set:
+```
+DASHBOARD_ENABLED=true
+CLIENT_SECRET=your-oauth2-client-secret   # Developer Portal -> OAuth2 -> Reset Secret
+DASHBOARD_URL=http://localhost:3000        # public base URL, no trailing slash
+DASHBOARD_PORT=3000
+SESSION_SECRET=some-long-random-string
+```
+Then, in the Developer Portal → **OAuth2 → Redirects**, add:
+```
+http://localhost:3000/callback
+```
+The dashboard starts automatically with the bot (`npm start`) and is available at `DASHBOARD_URL`.
+
+### 8. Invite the bot
 Use this URL (replace `CLIENT_ID`) with the `bot` + `applications.commands` scopes:
 ```
 https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=1374891765494&scope=bot%20applications.commands
@@ -135,7 +158,11 @@ discord-bot/
 │   ├── utils/               # embeds, logger, time, leveling math, pagination, helpers
 │   ├── services/            # tickets, giveaways, music, scheduler, help
 │   ├── events/              # gateway event handlers
-│   └── commands/            # slash commands grouped by category
+│   ├── commands/            # slash commands grouped by category
+│   └── dashboard/           # optional web dashboard (Express + EJS)
+│       ├── server.js        # OAuth2 + routes (shares the bot's DB & cache)
+│       ├── views/           # EJS templates
+│       └── public/          # static CSS
 └── data/                    # SQLite database (auto-created, git-ignored)
 ```
 

@@ -3,6 +3,7 @@
 const { Events, ActivityType } = require('discord.js');
 const logger = require('../utils/logger');
 const scheduler = require('../services/scheduler');
+const dashboard = require('../dashboard/server');
 
 module.exports = {
   name: Events.ClientReady,
@@ -28,5 +29,12 @@ module.exports = {
     }, 60_000);
 
     scheduler.start(client);
+
+    // Launch the web dashboard (no-op unless DASHBOARD_ENABLED=true).
+    try {
+      dashboard.start(client);
+    } catch (err) {
+      logger.error('Failed to start dashboard:', err.message);
+    }
   },
 };

@@ -1,0 +1,32 @@
+<%- include('partials/header', { title: 'Select a Server' }) %>
+
+<div class="page-head">
+  <h1>Your Servers</h1>
+  <p class="muted">Servers where you have the <strong>Manage Server</strong> permission.</p>
+</div>
+
+<% if (!guilds.length) { %>
+  <div class="empty">You don't manage any servers yet. <a href="<%= inviteUrl %>" target="_blank" rel="noopener">Invite the bot</a> to get started.</div>
+<% } else { %>
+  <div class="server-grid">
+    <% guilds.forEach((g) => { %>
+      <div class="server-card">
+        <div class="server-top">
+          <% if (g.iconUrl) { %>
+            <img src="<%= g.iconUrl %>" alt="" class="server-icon" />
+          <% } else { %>
+            <div class="server-icon server-icon-fallback"><%= g.name.charAt(0).toUpperCase() %></div>
+          <% } %>
+          <div class="server-name" title="<%= g.name %>"><%= g.name %></div>
+        </div>
+        <% if (g.botPresent) { %>
+          <a href="/servers/<%= g.id %>" class="btn btn-primary btn-block">Manage</a>
+        <% } else { %>
+          <a href="<%= inviteUrl %>&guild_id=<%= g.id %>" class="btn btn-secondary btn-block" target="_blank" rel="noopener">Add Bot</a>
+        <% } %>
+      </div>
+    <% }) %>
+  </div>
+<% } %>
+
+<%- include('partials/footer') %>

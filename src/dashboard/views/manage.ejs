@@ -1,0 +1,128 @@
+<%- include('partials/header', { title: guild.name }) %>
+
+<%
+  // Local render helpers for selects / toggles.
+  function channelSelect(name, selected, opts) {
+    let html = `<select name="${name}" class="input"><option value="none">— None —</option>`;
+    opts.forEach((c) => {
+      const sel = String(selected) === String(c.id) ? ' selected' : '';
+      html += `<option value="${c.id}"${sel}>#${c.name}</option>`;
+    });
+    return html + '</select>';
+  }
+  function roleSelect(name, selected, opts) {
+    let html = `<select name="${name}" class="input"><option value="none">— None —</option>`;
+    opts.forEach((r) => {
+      const sel = String(selected) === String(r.id) ? ' selected' : '';
+      html += `<option value="${r.id}"${sel}>@${r.name}</option>`;
+    });
+    return html + '</select>';
+  }
+  function toggle(name, on) {
+    return `<label class="switch"><input type="checkbox" name="${name}" ${on ? 'checked' : ''}/><span class="slider"></span></label>`;
+  }
+%>
+
+<div class="manage-head">
+  <% if (guild.icon) { %><img src="<%= guild.icon %>" alt="" class="manage-icon" /><% } %>
+  <div>
+    <h1><%= guild.name %></h1>
+    <p class="muted"><%= guild.memberCount %> members &middot; <%= guild.channelCount %> channels &middot; <%= guild.roleCount %> roles</p>
+  </div>
+  <a href="/servers/<%= guild.id %>/leaderboard" class="btn btn-secondary btn-sm">Leaderboards</a>
+</div>
+
+<% if (saved) { %><div class="alert alert-success">✅ Settings saved successfully!</div><% } %>
+
+<form method="POST" action="/servers/<%= guild.id %>" class="settings-form">
+  <input type="hidden" name="_csrf" value="<%= csrf %>" />
+
+  <div class="card">
+    <h2>⚙️ General</h2>
+    <div class="field">
+      <label>Legacy command prefix</label>
+      <input class="input input-short" type="text" name="prefix" maxlength="5" value="<%= cfg.prefix || '!' %>" />
+      <small class="muted">Used for legacy text commands &amp; custom tags. Slash commands always work.</small>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>👋 Welcome &amp; Goodbye</h2>
+    <div class="field-row">
+      <div class="field"><label>Welcome messages <%- toggle('welcome_enabled', cfg.welcome_enabled) %></label></div>
+    </div>
+    <div class="field"><label>Welcome channel</label><%- channelSelect('welcome_channel', cfg.welcome_channel, textChannels) %></div>
+    <div class="field">
+      <label>Welcome message</label>
+      <textarea class="input" name="welcome_message" rows="2" placeholder="Welcome {user} to {server}!"><%= cfg.welcome_message || '' %></textarea>
+      <small class="muted">Placeholders: <code>{user}</code> <code>{username}</code> <code>{server}</code> <code>{membercount}</code></small>
+    </div>
+    <hr class="divider" />
+    <div class="field-row">
+      <div class="field"><label>Goodbye messages <%- toggle('goodbye_enabled', cfg.goodbye_enabled) %></label></div>
+    </div>
+    <div class="field"><label>Goodbye channel</label><%- channelSelect('goodbye_channel', cfg.goodbye_channel, textChannels) %></div>
+    <div class="field">
+      <label>Goodbye message</label>
+      <textarea class="input" name="goodbye_message" rows="2" placeholder="{user} left the server."><%= cfg.goodbye_message || '' %></textarea>
+    </div>
+    <div class="field"><label>Autorole (given on join)</label><%- roleSelect('autorole', cfg.autorole, roles) %></div>
+  </div>
+
+  <div class="card">
+    <h2>📋 Logging</h2>
+    <div class="field"><label>Moderation log channel</label><%- channelSelect('mod_log_channel', cfg.mod_log_channel, textChannels) %></div>
+    <div class="field"><label>Message log (edits &amp; deletes)</label><%- channelSelect('message_log_channel', cfg.message_log_channel, textChannels) %></div>
+    <div class="field"><label>Join / leave log</label><%- channelSelect('join_log_channel', cfg.join_log_channel, textChannels) %></div>
+  </div>
+
+  <div class="card">
+    <h2>📈 Leveling</h2>
+    <div class="field-row">
+      <div class="field"><label>Leveling system <%- toggle('leveling_enabled', cfg.leveling_enabled) %></label></div>
+      <div class="field"><label>Level-up announcements <%- toggle('level_up_enabled', cfg.level_up_enabled) %></label></div>
+    </div>
+    <div class="field"><label>Level-up channel <small class="muted">(blank = current channel)</small></label><%- channelSelect('level_up_channel', cfg.level_up_channel, textChannels) %></div>
+    <div class="field">
+      <label>Level-up message</label>
+      <textarea class="input" name="level_up_message" rows="2" placeholder="GG {user}, you reached level {level}!"><%= cfg.level_up_message || '' %></textarea>
+      <small class="muted">Placeholders: <code>{user}</code> <code>{level}</code> <code>{server}</code></small>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🪙 Economy &amp; Engagement</h2>
+    <div class="field-row">
+      <div class="field"><label>Economy system <%- toggle('economy_enabled', cfg.economy_enabled) %></label></div>
+    </div>
+    <div class="field"><label>Starboard channel</label><%- channelSelect('starboard_channel', cfg.starboard_channel, textChannels) %></div>
+    <div class="field">
+      <label>Starboard threshold (stars required)</label>
+      <input class="input input-short" type="number" name="starboard_threshold" min="1" value="<%= cfg.starboard_threshold || 3 %>" />
+    </div>
+    <div class="field"><label>Suggestions channel</label><%- channelSelect('suggestion_channel', cfg.suggestion_channel, textChannels) %></div>
+  </div>
+
+  <div class="card">
+    <h2>🤖 Auto-Moderation</h2>
+    <div class="field-row">
+      <div class="field"><label>Enable Auto-Mod <%- toggle('automod_enabled', cfg.automod_enabled) %></label></div>
+    </div>
+    <small class="muted">Members with <em>Manage Messages</em> are always exempt.</small>
+    <div class="toggle-grid">
+      <div class="toggle-item"><span>Anti-Spam</span><%- toggle('automod_anti_spam', cfg.automod_anti_spam) %></div>
+      <div class="toggle-item"><span>Anti-Invite</span><%- toggle('automod_anti_invite', cfg.automod_anti_invite) %></div>
+      <div class="toggle-item"><span>Anti-Link</span><%- toggle('automod_anti_link', cfg.automod_anti_link) %></div>
+      <div class="toggle-item"><span>Anti-Mass-Mention</span><%- toggle('automod_anti_mention', cfg.automod_anti_mention) %></div>
+      <div class="toggle-item"><span>Anti-Caps</span><%- toggle('automod_anti_caps', cfg.automod_anti_caps) %></div>
+      <div class="toggle-item"><span>Bad-Words Filter</span><%- toggle('automod_badwords', cfg.automod_badwords) %></div>
+    </div>
+  </div>
+
+  <div class="form-actions">
+    <a href="/servers" class="btn btn-secondary">Back</a>
+    <button type="submit" class="btn btn-primary">Save Changes</button>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

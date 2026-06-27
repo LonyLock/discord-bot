@@ -1,0 +1,37 @@
+<%- include('partials/header', { title: botName }) %>
+
+<section class="hero">
+  <% if (botAvatar) { %><img src="<%= botAvatar %>" alt="" class="hero-avatar" /><% } %>
+  <h1><%= botName %> Dashboard</h1>
+  <p class="hero-sub">The all-in-one Discord bot — moderation, economy, leveling, tickets, giveaways, automod and more. Configure everything from your browser.</p>
+  <div class="hero-actions">
+    <% if (user) { %>
+      <a href="/servers" class="btn btn-primary">Manage Servers</a>
+    <% } else { %>
+      <a href="/login" class="btn btn-primary">Login with Discord</a>
+    <% } %>
+    <a href="<%= inviteUrl %>" class="btn btn-secondary" target="_blank" rel="noopener">Invite to Server</a>
+  </div>
+</section>
+
+<section class="stats-row">
+  <div class="stat-card"><span class="stat-num"><%= stats.guilds.toLocaleString() %></span><span class="stat-label">Servers</span></div>
+  <div class="stat-card"><span class="stat-num"><%= stats.users.toLocaleString() %></span><span class="stat-label">Users</span></div>
+  <div class="stat-card"><span class="stat-num"><%= stats.commands %></span><span class="stat-label">Commands</span></div>
+</section>
+
+<section class="features">
+  <h2>Everything in one bot</h2>
+  <div class="feature-grid">
+    <div class="feature"><h3>🛡️ Moderation</h3><p>Ban, kick, timeout, warn, purge, lock and a full mod-log history.</p></div>
+    <div class="feature"><h3>🤖 Auto-Mod</h3><p>Anti-spam, invites, links, mass-mention, caps and a bad-words filter.</p></div>
+    <div class="feature"><h3>🪙 Economy</h3><p>Currency, daily rewards, shop, gambling and leaderboards.</p></div>
+    <div class="feature"><h3>📈 Leveling</h3><p>XP, ranks, level-up rewards and announcements.</p></div>
+    <div class="feature"><h3>🎫 Tickets</h3><p>Button-based support tickets with staff claiming and logs.</p></div>
+    <div class="feature"><h3>🎉 Giveaways</h3><p>Multi-winner giveaways with role requirements and auto-draw.</p></div>
+    <div class="feature"><h3>🎭 Reaction Roles</h3><p>Self-assignable roles via reactions, plus autorole on join.</p></div>
+    <div class="feature"><h3>🎵 Music</h3><p>Play, queue, skip and loop tracks in voice channels.</p></div>
+  </div>
+</section>
+
+<%- include('partials/footer') %>

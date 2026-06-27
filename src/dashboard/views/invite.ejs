@@ -1,0 +1,10 @@
+<%- include('partials/header', { title: 'Bot not in server' }) %>
+
+<div class="empty empty-lg">
+  <h1>🤖 Bot not in this server</h1>
+  <p class="muted"><strong><%= guild.name %></strong> doesn't have <%= botName %> yet. Add it to start configuring.</p>
+  <a href="<%= inviteUrl %>&guild_id=<%= guild.id %>" class="btn btn-primary" target="_blank" rel="noopener">Add to <%= guild.name %></a>
+  <a href="/servers" class="btn btn-secondary">Back to servers</a>
+</div>
+
+<%- include('partials/footer') %>
