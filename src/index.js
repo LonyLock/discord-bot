@@ -12,11 +12,9 @@ const {
 
 const logger = require('./utils/logger');
 const { loadCommands, loadEvents } = require('./structures/loaders');
+const { validateEnv } = require('./utils/validateEnv');
 
-if (!process.env.DISCORD_TOKEN) {
-  logger.error('DISCORD_TOKEN is missing. Copy .env.example to .env and fill it in.');
-  process.exit(1);
-}
+validateEnv();
 
 const client = new Client({
   intents: [
@@ -66,6 +64,28 @@ loadEvents(client);
 // Global safety nets so one bad command never crashes the bot.
 process.on('unhandledRejection', (reason) => logger.error('Unhandled rejection:', reason));
 process.on('uncaughtException', (err) => logger.error('Uncaught exception:', err));
+
+// Graceful shutdown: close the DB and destroy the gateway connection cleanly.
+let shuttingDown = false;
+function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  logger.warn(`Received ${signal} — shutting down gracefully…`);
+  try {
+    const { db } = require('./database/db');
+    db.close();
+    logger.info('Database connection closed.');
+  } catch (err) {
+    logger.error('Error closing database:', err.message);
+  }
+  try {
+    client.destroy();
+    logger.info('Discord client destroyed.');
+  } catch { /* ignore */ }
+  setTimeout(() => process.exit(0), 500);
+}
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('SIGTERM', () => shutdown('SIGTERM'));
 
 client.login(process.env.DISCORD_TOKEN).catch((err) => {
   logger.error('Failed to log in:', err.message);

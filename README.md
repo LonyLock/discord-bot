@@ -145,6 +145,37 @@ https://discord.com/api/oauth2/authorize?client_id=CLIENT_ID&permissions=1374891
 
 ---
 
+## 🐳 Deployment (Docker)
+
+The bot ships with a `Dockerfile` and `docker-compose.yml` for one-command hosting.
+The SQLite database is stored in a mounted `./data` volume so it survives restarts and rebuilds.
+
+```bash
+cp .env.example .env      # fill in your token, client id, etc.
+docker compose up -d      # build + run in the background
+docker compose logs -f    # follow logs
+docker compose down       # stop
+```
+
+Or with plain Docker:
+```bash
+docker build -t nexus-bot .
+docker run -d --name nexus-bot --env-file .env -v "$(pwd)/data:/app/data" -p 3000:3000 nexus-bot
+```
+
+> Remember to run `npm run deploy` once (locally, or `docker compose exec bot npm run deploy`) to register slash commands.
+
+Prefer a process manager instead? `pm2 start src/index.js --name nexus-bot` also works on any host with Node 18+.
+
+## ✅ Validation & CI
+
+No Discord token is needed to sanity-check the codebase:
+```bash
+npm run validate   # verifies all 91 commands build, and every event/service loads
+```
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs this on every push and pull request,
+plus a `node --check` syntax pass over all source files.
+
 ## 🗂️ Project Structure
 ```
 discord-bot/

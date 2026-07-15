@@ -8,6 +8,7 @@
     "start": "node src/index.js",
     "dev": "node --watch src/index.js",
     "deploy": "node src/deploy-commands.js",
+    "validate": "node scripts/validate.js",
     "check": "node -e \"require('./src/index.js')\" || true"
   },
   "keywords": [
