@@ -1,50 +1,57 @@
 'use strict';
 
 /**
- * Renders an animated GIF of a slot spin with @napi-rs/canvas + gifenc.
+ * Renders an animated GIF of a slot spin with @napi-rs/canvas + gifenc, using
+ * hand-drawn vector symbols (src/services/slotsymbols.js) so no emoji font is
+ * needed. Reels spin as continuous strips, decelerate with easing + motion blur,
+ * lock in left→right, then the winning line pulses and the final frame holds.
+ * The GIF plays once (no looping re-spin).
  *
- * Loaded lazily and fully optional: if the native canvas, the GIF encoder, or a
- * color-emoji font are missing, isAvailable() is false and the /slots command
- * falls back to its text (edit-frame) animation. Nothing here is on the hot path
- * until a spin actually requests a GIF.
+ * Fully optional and lazily loaded, like the rank card: if the native canvas or
+ * the GIF encoder are missing, isAvailable() is false and /slots falls back to
+ * its text (edit-frame) animation.
  */
 
 let canvasLib = null;
 let gifenc = null;
-let emojiFont = null;
+let symbols = null;
 let available = false;
 try {
   canvasLib = require('@napi-rs/canvas');
   gifenc = require('gifenc');
-  // A color-emoji font must be resolvable or the reels render as blank tiles.
-  const fams = (canvasLib.GlobalFonts.families || []).map((f) => f.family);
-  emojiFont = fams.find((n) => /emoji/i.test(n)) || null;
-  available = Boolean(emojiFont);
+  symbols = require('./slotsymbols');
+  available = true;
 } catch {
   available = false;
 }
 
 const { spinSymbol } = require('../utils/slots');
 
-// Layout constants (pixels).
+// Layout (pixels).
 const TILE = 92;
 const GAP = 10;
+const CELL = TILE + GAP;
 const PAD = 22;
 const ROWS = 3;
+const SYM = TILE * 0.32; // symbol radius
 
-// Animation constants.
-const FPS_DELAY = 55; // ms per frame
-const SCROLL_PX = 46; // reel travel per frame while spinning
-const SPIN_FRAMES = 12; // frames every column spins before any locks
-const STAGGER = 4; // extra spinning frames per column before it locks
-const HOLD_FRAMES = 16; // frames to hold the final result
+// Animation.
+const FPS_DELAY = 45; // ms per spinning frame
+const HOLD_DELAY = 90; // ms per held frame
+const SPIN_MIN = 15; // frames the first reel spins before stopping
+const STAGGER = 4; // extra spinning frames per subsequent reel
+const LOOPS = 6; // full strip revolutions before landing (spin length)
+const HOLD_FRAMES = 14;
+const STRIP_LEN = 20;
 
 const BG = '#12151d';
 const PANEL = '#1c2130';
-const TILE_BG = '#0e111a';
-const TILE_EDGE = '#2b3145';
+const REEL_BG = '#0b0e15';
+const SEP = 'rgba(255,255,255,0.05)';
 const WIN_EDGE = '#f1c40f';
 const LOCK_FLASH = '#ffffff';
+
+const easeOutQuart = (p) => 1 - Math.pow(1 - p, 4);
 
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
@@ -69,45 +76,39 @@ async function generate({ grid, winCells = [], accent = '#5865F2' }) {
   const { GIFEncoder, quantize, applyPalette } = gifenc;
 
   const cols = grid[0].length;
-  const W = PAD * 2 + cols * TILE + (cols - 1) * GAP;
-  const gridH = ROWS * TILE + (ROWS - 1) * GAP;
+  const gridH = ROWS * CELL - GAP;
+  const W = PAD * 2 + cols * CELL - GAP;
   const H = PAD * 2 + gridH;
   const gridTop = PAD;
+  const colX = (c) => PAD + c * CELL;
 
   const canvas = createCanvas(W, H);
   const ctx = canvas.getContext('2d');
-  const symFont = `${Math.round(TILE * 0.62)}px "${emojiFont}"`;
 
-  // Per-column reel strips of random symbols scrolled during the spin. The final
-  // three entries are pinned to the target grid so the lock lands seamlessly.
-  const STRIP_LEN = 24;
+  // Per-column reel strips; the final ROWS entries are pinned to the target grid
+  // so the reel lands exactly on the resolved outcome.
   const strips = [];
   for (let c = 0; c < cols; c++) {
     const strip = Array.from({ length: STRIP_LEN }, () => spinSymbol());
     for (let r = 0; r < ROWS; r++) strip[STRIP_LEN - ROWS + r] = grid[r][c];
     strips.push(strip);
   }
-  const lockFrame = (c) => SPIN_FRAMES + c * STAGGER;
-  const totalSpin = lockFrame(cols - 1) + 1;
+  const stopFrame = (c) => SPIN_MIN + c * STAGGER;
+  const travel = LOOPS * STRIP_LEN + (STRIP_LEN - ROWS); // integer → lands with zero offset
+  const totalSpin = stopFrame(cols - 1) + 1;
   const totalFrames = totalSpin + HOLD_FRAMES;
 
-  const colX = (c) => PAD + c * (TILE + GAP);
-  const rowY = (r) => gridTop + r * (TILE + GAP);
+  // Reel position (in cell units) for column c at frame f, and previous frame (for blur).
+  function posAt(c, f) {
+    const stop = stopFrame(c);
+    if (f >= stop) return travel;
+    return easeOutQuart(f / stop) * travel;
+  }
 
-  function tile(x, y, symbol, edge, lineWidth) {
-    ctx.fillStyle = TILE_BG;
-    roundRect(ctx, x, y, TILE, TILE, 14);
-    ctx.fill();
-    if (symbol) {
-      ctx.font = symFont;
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(symbol, x + TILE / 2, y + TILE / 2 + 2);
-    }
-    ctx.strokeStyle = edge;
-    ctx.lineWidth = lineWidth;
-    roundRect(ctx, x, y, TILE, TILE, 14);
-    ctx.stroke();
+  function drawSymbolAt(sym, cx, cy, alpha) {
+    if (alpha < 1) ctx.globalAlpha = alpha;
+    symbols.draw(ctx, sym, cx, cy, SYM);
+    ctx.globalAlpha = 1;
   }
 
   const enc = GIFEncoder();
@@ -128,40 +129,64 @@ async function generate({ grid, winCells = [], accent = '#5865F2' }) {
     const held = f >= totalSpin;
 
     for (let c = 0; c < cols; c++) {
-      const locked = f >= lockFrame(c);
-      // Clip to the column's visible 3-row viewport so scrolling symbols don't bleed.
+      const x = colX(c);
+      // Reel background.
+      ctx.fillStyle = REEL_BG;
+      roundRect(ctx, x, gridTop, TILE, gridH, 14);
+      ctx.fill();
+
       ctx.save();
-      roundRect(ctx, colX(c), gridTop, TILE, gridH, 14);
+      roundRect(ctx, x, gridTop, TILE, gridH, 14);
       ctx.clip();
 
-      if (!locked) {
-        // Scroll the strip upward; draw an extra tile above/below for smoothness.
-        const travel = f * SCROLL_PX;
-        const base = Math.floor(travel / (TILE + GAP));
-        const off = travel % (TILE + GAP);
-        for (let r = -1; r <= ROWS; r++) {
-          const sym = strips[c][((base + r) % STRIP_LEN + STRIP_LEN) % STRIP_LEN];
-          tile(colX(c), rowY(r) - off, sym, TILE_EDGE, 2);
-        }
-      } else {
-        for (let r = 0; r < ROWS; r++) {
-          const justLocked = f < lockFrame(c) + 2;
-          const win = held && winSet.has(`${r},${c}`);
-          const edge = justLocked ? LOCK_FLASH : win ? WIN_EDGE : TILE_EDGE;
-          tile(colX(c), rowY(r), grid[r][c], edge, win || justLocked ? 4 : 2);
+      const u = posAt(c, f);
+      const speed = u - posAt(c, f - 1); // cells/frame, for motion blur
+      const base = Math.floor(u);
+      const off = (u - base) * CELL;
+      const cxCol = x + TILE / 2;
+
+      for (let r = -1; r <= ROWS; r++) {
+        const idx = ((base + r) % STRIP_LEN + STRIP_LEN) % STRIP_LEN;
+        const sym = strips[c][idx];
+        const cy = gridTop + r * CELL + TILE / 2 - off;
+        if (speed > 1.2) {
+          // Motion blur: faint trailing ghosts above and below.
+          drawSymbolAt(sym, cxCol, cy - CELL * 0.33, 0.22);
+          drawSymbolAt(sym, cxCol, cy + CELL * 0.33, 0.22);
+          drawSymbolAt(sym, cxCol, cy, 0.8);
+        } else {
+          drawSymbolAt(sym, cxCol, cy, 1);
         }
       }
       ctx.restore();
+
+      // Row separators.
+      ctx.strokeStyle = SEP;
+      ctx.lineWidth = 1;
+      for (let r = 1; r < ROWS; r++) {
+        ctx.beginPath();
+        ctx.moveTo(x, gridTop + r * CELL - GAP / 2);
+        ctx.lineTo(x + TILE, gridTop + r * CELL - GAP / 2);
+        ctx.stroke();
+      }
+
+      // Brief white flash the moment a reel locks.
+      if (f >= stopFrame(c) && f < stopFrame(c) + 2) {
+        ctx.strokeStyle = LOCK_FLASH;
+        ctx.lineWidth = 4;
+        roundRect(ctx, x, gridTop, TILE, gridH, 14);
+        ctx.stroke();
+      }
     }
 
-    // Pulsing highlight ring on winning cells during the hold.
+    // Pulsing highlight on winning cells during the hold.
     if (held && winSet.size) {
-      const pulse = 2 + Math.abs(((f - totalSpin) % 8) - 4);
+      const pulse = 3 + Math.abs(((f - totalSpin) % 8) - 4);
       ctx.strokeStyle = WIN_EDGE;
       ctx.lineWidth = pulse;
       for (const key of winSet) {
         const [r, c] = key.split(',').map(Number);
-        roundRect(ctx, colX(c), rowY(r), TILE, TILE, 14);
+        roundRect(ctx, colX(c), gridTop + r * CELL, TILE, TILE, 12);
         ctx.stroke();
       }
     }
@@ -172,7 +197,7 @@ async function generate({ grid, winCells = [], accent = '#5865F2' }) {
     // First frame declares repeat: -1 = play once and hold (no looping re-spin).
     enc.writeFrame(index, W, H, {
       palette,
-      delay: held ? FPS_DELAY + 25 : FPS_DELAY,
+      delay: held ? HOLD_DELAY : FPS_DELAY,
       repeat: f === 0 ? -1 : undefined,
     });
   }

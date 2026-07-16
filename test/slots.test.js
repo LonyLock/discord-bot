@@ -31,9 +31,9 @@ test('a full grid of one symbol wins every payline', () => {
 test('a grid with no three-in-a-row from the left pays nothing', () => {
   // Left column deliberately all-different so no line can reach 3 from the left.
   const grid = [
-    ['🍒', '🍋', '🍊'],
-    ['🍋', '🍊', '🍒'],
-    ['🍊', '🍒', '🍋'],
+    ['🍒', '🍋', '🍇'],
+    ['🍋', '🍇', '🍒'],
+    ['🍇', '🍒', '🍋'],
   ];
   const { lines, multiplier } = evaluate(grid);
   assert.strictEqual(lines.length, 0);

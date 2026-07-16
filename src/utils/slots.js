@@ -17,10 +17,9 @@
 
 // Reel strip: each symbol repeated by its weight. Rarer → fewer copies → bigger payout.
 const STRIP = [
-  ...Array(8).fill('🍒'),
-  ...Array(7).fill('🍋'),
-  ...Array(6).fill('🍊'),
-  ...Array(5).fill('🍇'),
+  ...Array(9).fill('🍒'),
+  ...Array(8).fill('🍋'),
+  ...Array(6).fill('🍇'),
   ...Array(4).fill('🔔'),
   ...Array(2).fill('💎'),
   ...Array(1).fill('7️⃣'),
@@ -30,7 +29,6 @@ const STRIP = [
 const VALUE = {
   '🍒': 2,
   '🍋': 3,
-  '🍊': 4,
   '🍇': 6,
   '🔔': 10,
   '💎': 25,
@@ -45,8 +43,8 @@ const ROWS = 3;
 // the wider 5×3 grid pays far more on raw 4-/5-of-a-kind hits, so it is scaled down,
 // while the tighter 3×3 is nudged up. Tuned by Monte-Carlo (see test/slots.test.js).
 const MODES = {
-  '3x3': { cols: 3, payoutScale: 1.18 },
-  '5x3': { cols: 5, payoutScale: 0.62 },
+  '3x3': { cols: 3, payoutScale: 0.70 },
+  '5x3': { cols: 5, payoutScale: 0.31 },
 };
 
 /** Build the payline coordinate sets for a given column count. */
