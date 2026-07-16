@@ -72,6 +72,9 @@ Near-full parity with the in-Discord commands, organised into tabs:
 - **Reaction Roles** — review & remove existing reaction roles
 - **Commands** — enable/disable any command per-server (core admin commands locked)
 - **Leaderboards** — top levels & richest members
+- **👑 Owner Panel** (users in `OWNER_IDS` only) — global stats & runtime info, top-commands
+  analytics, list/leave every server, and a global user/server **blacklist** (blacklisted users
+  can't run commands; blacklisted servers are left and can't be rejoined)
 - Changes apply **instantly** (the dashboard shares the bot's database and config cache)
 - Responsive dark theme, CSRF-protected forms
 

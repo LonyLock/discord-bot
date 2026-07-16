@@ -1,0 +1,39 @@
+<%- include('partials/header', { title: 'Owner — Servers' }) %>
+<%- include('partials/ownernav', { active }) %>
+
+<div class="card">
+  <h2>🌐 All Servers <span class="badge"><%= guilds.length %></span></h2>
+  <p class="muted">Every server the bot is in. <strong>Leave</strong> removes the bot; <strong>Blacklist</strong> also prevents it from rejoining.</p>
+  <% if (!guilds.length) { %>
+    <p class="muted">The bot isn't in any servers yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Server</th><th>ID</th><th>Members</th><th>Actions</th></tr></thead>
+      <tbody>
+        <% guilds.forEach((g) => { %>
+          <tr>
+            <td><strong><%= g.name %></strong></td>
+            <td><code><%= g.id %></code></td>
+            <td><%= g.members.toLocaleString() %></td>
+            <td class="action-cell">
+              <form method="POST" action="/owner/servers" onsubmit="return confirm('Make the bot leave <%= g.name.replace(/'/g, "") %>?');">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="leave" />
+                <input type="hidden" name="guild_id" value="<%= g.id %>" />
+                <button type="submit" class="btn btn-secondary btn-sm">Leave</button>
+              </form>
+              <form method="POST" action="/owner/servers" onsubmit="return confirm('Blacklist <%= g.name.replace(/'/g, "") %>? The bot will leave and refuse to rejoin.');">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="blacklist" />
+                <input type="hidden" name="guild_id" value="<%= g.id %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Blacklist</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

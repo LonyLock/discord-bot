@@ -1,0 +1,72 @@
+<%- include('partials/header', { title: 'Owner — Blacklist' }) %>
+<%- include('partials/ownernav', { active }) %>
+
+<div class="lb-grid">
+  <div class="card">
+    <h2>🚷 Blacklisted Users <span class="badge"><%= users.length %></span></h2>
+    <p class="muted">Blacklisted users cannot use any command anywhere.</p>
+    <form method="POST" action="/owner/blacklist" class="settings-form">
+      <input type="hidden" name="_csrf" value="<%= csrf %>" />
+      <input type="hidden" name="_action" value="user_add" />
+      <div class="field"><label>User ID</label><input class="input" name="target_id" pattern="\d{16,20}" placeholder="123456789012345678" required /></div>
+      <div class="field"><label>Reason <small class="muted">(optional)</small></label><input class="input" name="reason" maxlength="200" /></div>
+      <div class="form-actions"><button type="submit" class="btn btn-danger">Blacklist User</button></div>
+    </form>
+    <% if (users.length) { %>
+      <table class="data-table" style="margin-top:14px">
+        <thead><tr><th>User ID</th><th>Reason</th><th></th></tr></thead>
+        <tbody>
+          <% users.forEach((u) => { %>
+            <tr>
+              <td><code><%= u.user_id %></code></td>
+              <td class="truncate-cell"><%= u.reason || '—' %></td>
+              <td>
+                <form method="POST" action="/owner/blacklist">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                  <input type="hidden" name="_action" value="user_remove" />
+                  <input type="hidden" name="target_id" value="<%= u.user_id %>" />
+                  <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2>🚫 Blacklisted Servers <span class="badge"><%= guilds.length %></span></h2>
+    <p class="muted">The bot leaves these servers and refuses to rejoin.</p>
+    <form method="POST" action="/owner/blacklist" class="settings-form">
+      <input type="hidden" name="_csrf" value="<%= csrf %>" />
+      <input type="hidden" name="_action" value="guild_add" />
+      <div class="field"><label>Server ID</label><input class="input" name="target_id" pattern="\d{16,20}" placeholder="123456789012345678" required /></div>
+      <div class="field"><label>Reason <small class="muted">(optional)</small></label><input class="input" name="reason" maxlength="200" /></div>
+      <div class="form-actions"><button type="submit" class="btn btn-danger">Blacklist Server</button></div>
+    </form>
+    <% if (guilds.length) { %>
+      <table class="data-table" style="margin-top:14px">
+        <thead><tr><th>Server ID</th><th>Reason</th><th></th></tr></thead>
+        <tbody>
+          <% guilds.forEach((g) => { %>
+            <tr>
+              <td><code><%= g.guild_id %></code></td>
+              <td class="truncate-cell"><%= g.reason || '—' %></td>
+              <td>
+                <form method="POST" action="/owner/blacklist">
+                  <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                  <input type="hidden" name="_action" value="guild_remove" />
+                  <input type="hidden" name="target_id" value="<%= g.guild_id %>" />
+                  <button type="submit" class="btn btn-secondary btn-sm">Remove</button>
+                </form>
+              </td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

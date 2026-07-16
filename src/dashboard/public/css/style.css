@@ -183,6 +183,11 @@ select.input-multi option:checked { background: var(--primary) linear-gradient(0
 .btn-danger { background: var(--danger); color: #fff; }
 .btn-danger:hover { background: #c93538; }
 
+/* Owner link + action cells */
+.owner-link { color: var(--warnColor, #FEE75C) !important; }
+.action-cell { display: flex; gap: 8px; }
+.action-cell form { margin: 0; }
+
 /* Badge / pills */
 .badge { display: inline-block; background: var(--primary); color: #fff; font-size: .75rem; padding: 1px 9px; border-radius: 20px; vertical-align: middle; margin-left: 6px; }
 .tag-pill { background: var(--bg-2); border: 1px solid var(--border); padding: 2px 9px; border-radius: 6px; font-size: .8rem; }

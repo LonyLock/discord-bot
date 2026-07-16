@@ -264,6 +264,18 @@ CREATE TABLE IF NOT EXISTS log_ignored_channels (
   channel_id TEXT NOT NULL,
   PRIMARY KEY (guild_id, channel_id)
 );
+
+CREATE TABLE IF NOT EXISTS blacklist_users (
+  user_id  TEXT PRIMARY KEY,
+  reason   TEXT,
+  added_at INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS blacklist_guilds (
+  guild_id TEXT PRIMARY KEY,
+  reason   TEXT,
+  added_at INTEGER NOT NULL
+);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -376,6 +388,27 @@ function isLogIgnored(guildId, ...channelIds) {
   return channelIds.some((id) => id && isIgnoredStmt.get(guildId, id));
 }
 
+/* ------------------------------------------------------------------ */
+/*  Blacklists (owner-level bans on users / guilds)                   */
+/* ------------------------------------------------------------------ */
+const blUserAdd = db.prepare('INSERT OR REPLACE INTO blacklist_users (user_id, reason, added_at) VALUES (?, ?, ?)');
+const blUserDel = db.prepare('DELETE FROM blacklist_users WHERE user_id = ?');
+const blUserGet = db.prepare('SELECT 1 FROM blacklist_users WHERE user_id = ? LIMIT 1');
+const blUserList = db.prepare('SELECT * FROM blacklist_users ORDER BY added_at DESC');
+const blGuildAdd = db.prepare('INSERT OR REPLACE INTO blacklist_guilds (guild_id, reason, added_at) VALUES (?, ?, ?)');
+const blGuildDel = db.prepare('DELETE FROM blacklist_guilds WHERE guild_id = ?');
+const blGuildGet = db.prepare('SELECT 1 FROM blacklist_guilds WHERE guild_id = ? LIMIT 1');
+const blGuildList = db.prepare('SELECT * FROM blacklist_guilds ORDER BY added_at DESC');
+
+const blacklistUser = (userId, reason) => blUserAdd.run(userId, reason || null, Date.now());
+const unblacklistUser = (userId) => blUserDel.run(userId);
+const isUserBlacklisted = (userId) => !!blUserGet.get(userId);
+const listBlacklistedUsers = () => blUserList.all();
+const blacklistGuild = (guildId, reason) => blGuildAdd.run(guildId, reason || null, Date.now());
+const unblacklistGuild = (guildId) => blGuildDel.run(guildId);
+const isGuildBlacklisted = (guildId) => !!blGuildGet.get(guildId);
+const listBlacklistedGuilds = () => blGuildList.all();
+
 module.exports = {
   db,
   getGuildConfig,
@@ -389,4 +422,12 @@ module.exports = {
   unignoreLogChannel,
   listIgnoredLogChannels,
   isLogIgnored,
+  blacklistUser,
+  unblacklistUser,
+  isUserBlacklisted,
+  listBlacklistedUsers,
+  blacklistGuild,
+  unblacklistGuild,
+  isGuildBlacklisted,
+  listBlacklistedGuilds,
 };

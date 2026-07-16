@@ -1,7 +1,7 @@
 'use strict';
 
 const { Events, Collection, MessageFlags, PermissionFlagsBits } = require('discord.js');
-const { db, getGuildConfig, trackCommand } = require('../database/db');
+const { db, getGuildConfig, trackCommand, isUserBlacklisted } = require('../database/db');
 const Embed = require('../utils/embed');
 const logger = require('../utils/logger');
 const tickets = require('../services/tickets');
@@ -42,6 +42,14 @@ module.exports = {
 async function handleCommand(interaction, client) {
   const command = client.commands.get(interaction.commandName);
   if (!command) return;
+
+  // Globally blacklisted users cannot use commands (owners are exempt).
+  if (isUserBlacklisted(interaction.user.id) && !client.ownerIds.includes(interaction.user.id)) {
+    return interaction.reply({
+      embeds: [Embed.error('You are blacklisted from using this bot.')],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
 
   // Per-guild disabled commands (owners bypass).
   if (

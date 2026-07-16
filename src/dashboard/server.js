@@ -23,6 +23,12 @@ const {
   listIgnoredLogChannels,
   ignoreLogChannel,
   unignoreLogChannel,
+  blacklistUser,
+  unblacklistUser,
+  listBlacklistedUsers,
+  blacklistGuild,
+  unblacklistGuild,
+  listBlacklistedGuilds,
 } = require('../database/db');
 const logger = require('../utils/logger');
 const config = require('../../config.json');
@@ -107,10 +113,18 @@ function start(client) {
     res.locals.botAvatar = client.user?.displayAvatarURL({ size: 128 }) || null;
     res.locals.inviteUrl = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&permissions=1374891765494&scope=bot%20applications.commands`;
     res.locals.path = req.path;
+    res.locals.isOwner = !!req.session.user && client.ownerIds.includes(req.session.user.id);
     next();
   });
 
   const requireAuth = (req, res, next) => (req.session.user ? next() : res.redirect('/login'));
+  const requireOwner = (req, res, next) => {
+    if (!req.session.user) return res.redirect('/login');
+    if (!client.ownerIds.includes(req.session.user.id)) {
+      return res.status(403).render('error', { code: 403, message: 'This area is restricted to bot owners.' });
+    }
+    next();
+  };
 
   /* --------------------------- helpers --------------------------- */
   const newCsrf = (req) => (req.session.csrf = crypto.randomBytes(16).toString('hex'));
@@ -514,6 +528,87 @@ function start(client) {
       economy: economy.map((e) => ({ ...e, name: resolve(e.user_id) })),
       currency: config.economy.currencySymbol,
     });
+  });
+
+  /* ========================= OWNER PANEL ========================= */
+  app.get('/owner', requireOwner, (req, res) => {
+    const topCommands = db
+      .prepare('SELECT command, uses FROM command_stats ORDER BY uses DESC LIMIT 10')
+      .all();
+    const totalUses = db.prepare('SELECT COALESCE(SUM(uses),0) AS t FROM command_stats').get().t;
+    res.render('owner', {
+      active: 'overview',
+      stats: {
+        guilds: client.guilds.cache.size,
+        users: client.guilds.cache.reduce((a, g) => a + (g.memberCount || 0), 0),
+        commands: client.commands.size,
+        totalUses,
+        uptime: Date.now() - (client.startedAt || Date.now()),
+        memory: (process.memoryUsage().heapUsed / 1024 / 1024).toFixed(1),
+        ping: Math.round(client.ws.ping),
+        node: process.version,
+      },
+      topCommands,
+      blacklistedUsers: listBlacklistedUsers().length,
+      blacklistedGuilds: listBlacklistedGuilds().length,
+    });
+  });
+
+  app.get('/owner/servers', requireOwner, (req, res) => {
+    const guilds = [...client.guilds.cache.values()]
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        members: g.memberCount || 0,
+        icon: g.iconURL({ size: 64 }),
+        ownerId: g.ownerId,
+      }))
+      .sort((a, b) => b.members - a.members);
+    res.render('owner_servers', { active: 'servers', guilds, csrf: newCsrf(req) });
+  });
+
+  app.post('/owner/servers', requireOwner, async (req, res) => {
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const { _action, guild_id: gid, reason } = req.body;
+    const guild = client.guilds.cache.get(gid);
+    if (_action === 'leave' && guild) {
+      await guild.leave().catch(() => {});
+      logger.warn(`Owner ${req.session.user.username} made the bot leave ${gid}`);
+    } else if (_action === 'blacklist' && gid) {
+      blacklistGuild(gid, reason || `Blacklisted by ${req.session.user.username}`);
+      if (guild) await guild.leave().catch(() => {});
+      logger.warn(`Owner ${req.session.user.username} blacklisted guild ${gid}`);
+    }
+    res.redirect('/owner/servers');
+  });
+
+  app.get('/owner/blacklist', requireOwner, (req, res) => {
+    res.render('owner_blacklist', {
+      active: 'blacklist',
+      users: listBlacklistedUsers(),
+      guilds: listBlacklistedGuilds(),
+      csrf: newCsrf(req),
+    });
+  });
+
+  app.post('/owner/blacklist', requireOwner, (req, res) => {
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const { _action, target_id: id, reason } = req.body;
+    const validId = /^\d{16,20}$/.test(id || '');
+    if (_action === 'user_add' && validId) {
+      if (client.ownerIds.includes(id)) {
+        // never blacklist an owner
+      } else blacklistUser(id, reason || `Added by ${req.session.user.username}`);
+    } else if (_action === 'user_remove' && id) {
+      unblacklistUser(id);
+    } else if (_action === 'guild_add' && validId) {
+      blacklistGuild(id, reason || `Added by ${req.session.user.username}`);
+      const g = client.guilds.cache.get(id);
+      if (g) g.leave().catch(() => {});
+    } else if (_action === 'guild_remove' && id) {
+      unblacklistGuild(id);
+    }
+    res.redirect('/owner/blacklist');
   });
 
   app.use((req, res) => res.status(404).render('error', { code: 404, message: 'Page not found.' }));

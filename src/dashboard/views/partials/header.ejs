@@ -17,6 +17,7 @@
       <a href="/" class="<%= path === '/' ? 'active' : '' %>">Home</a>
       <% if (user) { %>
         <a href="/servers" class="<%= path.startsWith('/servers') ? 'active' : '' %>">Servers</a>
+        <% if (isOwner) { %><a href="/owner" class="owner-link <%= path.startsWith('/owner') ? 'active' : '' %>">👑 Owner</a><% } %>
         <div class="nav-user">
           <img src="<%= user.avatar %>" alt="" class="nav-avatar" />
           <span><%= user.global_name || user.username %></span>

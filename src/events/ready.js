@@ -4,6 +4,7 @@ const { Events, ActivityType } = require('discord.js');
 const logger = require('../utils/logger');
 const scheduler = require('../services/scheduler');
 const dashboard = require('../dashboard/server');
+const { isGuildBlacklisted } = require('../database/db');
 
 module.exports = {
   name: Events.ClientReady,
@@ -29,6 +30,14 @@ module.exports = {
     }, 60_000);
 
     scheduler.start(client);
+
+    // Safety net: leave any blacklisted guilds we're currently in.
+    for (const guild of client.guilds.cache.values()) {
+      if (isGuildBlacklisted(guild.id)) {
+        logger.warn(`Leaving blacklisted guild: ${guild.name} (${guild.id})`);
+        guild.leave().catch(() => {});
+      }
+    }
 
     // Launch the web dashboard (no-op unless DASHBOARD_ENABLED=true).
     try {
