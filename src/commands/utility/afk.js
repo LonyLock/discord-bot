@@ -2,6 +2,7 @@
 const { SlashCommandBuilder } = require('discord.js');
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 const setAfk = db.prepare('INSERT OR REPLACE INTO afk (user_id, guild_id, reason, timestamp) VALUES (?, ?, ?, ?)');
 
@@ -15,6 +16,6 @@ module.exports = {
   async execute(interaction) {
     const reason = interaction.options.getString('reason') || 'AFK';
     setAfk.run(interaction.user.id, interaction.guild.id, reason, Date.now());
-    return interaction.reply({ embeds: [Embed.success(`I set your AFK status: ${reason}`)] });
+    return interaction.reply({ embeds: [Embed.success(t(interaction.guild.id, 'util.afk.set', { reason }))] });
   },
 };

@@ -3,6 +3,7 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const help = require('../../services/help');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'utility',
@@ -12,19 +13,20 @@ module.exports = {
     .setDescription('Show the interactive help menu or details about a command')
     .addStringOption((o) => o.setName('command').setDescription('Get details about a specific command').setAutocomplete(true)),
   async execute(interaction, client) {
+    const gid = interaction.guild?.id;
     const query = interaction.options.getString('command');
     if (query) {
       const cmd = client.commands.get(query.toLowerCase());
-      if (!cmd) return interaction.reply({ embeds: [Embed.error(`No command named \`${query}\`.`)], ephemeral: true });
-      const opts = cmd.data.options?.map((o) => `\`${o.name}\`${o.required ? '' : ' (optional)'} — ${o.description}`).join('\n') || 'None';
+      if (!cmd) return interaction.reply({ embeds: [Embed.error(t(gid, 'util.help.no_command', { query }))], ephemeral: true });
+      const opts = cmd.data.options?.map((o) => `\`${o.name}\`${o.required ? '' : t(gid, 'util.help.optional')} — ${o.description}`).join('\n') || t(gid, 'util.help.none');
       const embed = new EmbedBuilder()
         .setColor(config.brand.color)
         .setTitle(`/${cmd.data.name}`)
         .setDescription(cmd.data.description)
         .addFields(
-          { name: 'Category', value: cmd.category, inline: true },
-          { name: 'Cooldown', value: `${cmd.cooldown ?? config.cooldownDefaultSeconds}s`, inline: true },
-          { name: 'Options', value: opts })
+          { name: t(gid, 'util.help.field.category'), value: cmd.category, inline: true },
+          { name: t(gid, 'util.help.field.cooldown'), value: `${cmd.cooldown ?? config.cooldownDefaultSeconds}s`, inline: true },
+          { name: t(gid, 'util.help.field.options'), value: opts })
         .setFooter({ text: config.brand.footer });
       return interaction.reply({ embeds: [embed], ephemeral: true });
     }

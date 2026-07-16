@@ -3,6 +3,7 @@
 const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'utility',
@@ -31,7 +32,7 @@ module.exports = {
         reminders: db.prepare('SELECT * FROM reminders WHERE user_id = ?').all(uid),
       };
       const file = new AttachmentBuilder(Buffer.from(JSON.stringify(data, null, 2), 'utf8'), { name: 'my-data.json' });
-      return interaction.editReply({ embeds: [Embed.success('Here is a copy of your data on this server.')], files: [file] });
+      return interaction.editReply({ embeds: [Embed.success(t(gid, 'util.mydata.export_success'))], files: [file] });
     }
 
     // delete — self-service reset of personal (non-moderation) data.
@@ -44,7 +45,7 @@ module.exports = {
     });
     tx();
     return interaction.reply({
-      embeds: [Embed.success('Your economy, level, inventory, AFK and reminder data on this server has been deleted.\n*Moderation records (warnings) are retained by the server.*')],
+      embeds: [Embed.success(t(gid, 'util.mydata.delete_success'))],
       ephemeral: true,
     });
   },

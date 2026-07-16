@@ -3,6 +3,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits, AttachmentBuilder } = require('discord.js');
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 // Tables exported for a guild backup (all keyed by guild_id).
 const TABLES = ['guild_config', 'levels', 'level_roles', 'economy', 'shop_items', 'warnings',
@@ -30,7 +31,7 @@ module.exports = {
     const rows = Object.values(data.tables).reduce((a, t) => a + t.length, 0);
     const file = new AttachmentBuilder(Buffer.from(json, 'utf8'), { name: `backup-${interaction.guild.id}.json` });
     return interaction.editReply({
-      embeds: [Embed.success(`Exported **${rows}** record(s) across ${TABLES.length} tables.`)],
+      embeds: [Embed.success(t(interaction.guild.id, 'util.export.success', { rows, tables: TABLES.length }))],
       files: [file],
     });
   },

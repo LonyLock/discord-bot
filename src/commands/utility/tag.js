@@ -3,6 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
+const { t } = require('../../i18n');
 
 const getTag = db.prepare('SELECT * FROM tags WHERE guild_id = ? AND name = ?');
 const setTag = db.prepare('INSERT OR REPLACE INTO tags (guild_id, name, content, author_id, uses, created) VALUES (?, ?, ?, ?, COALESCE((SELECT uses FROM tags WHERE guild_id=? AND name=?),0), ?)');
@@ -28,24 +29,24 @@ module.exports = {
     if (sub === 'show') {
       const name = interaction.options.getString('name').toLowerCase();
       const tag = getTag.get(gid, name);
-      if (!tag) return interaction.reply({ embeds: [Embed.error('That tag does not exist.')], ephemeral: true });
+      if (!tag) return interaction.reply({ embeds: [Embed.error(t(gid, 'util.tag.not_exist'))], ephemeral: true });
       bumpTag.run(gid, name);
       return interaction.reply({ content: tag.content });
     }
     if (sub === 'list') {
       const rows = listTags.all(gid);
-      return interaction.reply({ embeds: [Embed.info('🏷️ Tags', rows.length ? rows.map((r) => `\`${r.name}\``).join(', ') : 'No tags yet.')] });
+      return interaction.reply({ embeds: [Embed.info(t(gid, 'util.tag.list_title'), rows.length ? rows.map((r) => `\`${r.name}\``).join(', ') : t(gid, 'util.tag.no_tags'))] });
     }
     if (!interaction.memberPermissions.has(PermissionFlagsBits.ManageMessages))
-      return interaction.reply({ embeds: [Embed.error('You need Manage Messages to do that.')], ephemeral: true });
+      return interaction.reply({ embeds: [Embed.error(t(gid, 'util.tag.need_perms'))], ephemeral: true });
     const name = interaction.options.getString('name').toLowerCase().replace(/\s+/g, '-').slice(0, 50);
     if (sub === 'create') {
       const content = interaction.options.getString('content');
       setTag.run(gid, name, content, interaction.user.id, gid, name, Date.now());
-      return interaction.reply({ embeds: [Embed.success(`Tag \`${name}\` saved. Use it with \`/tag show ${name}\` or \`${config.defaults.prefix}${name}\`.`)] });
+      return interaction.reply({ embeds: [Embed.success(t(gid, 'util.tag.saved', { name, prefix: config.defaults.prefix }))] });
     }
     const res = delTag.run(gid, name);
-    return interaction.reply({ embeds: [res.changes ? Embed.success(`Deleted tag \`${name}\`.`) : Embed.error('That tag does not exist.')] });
+    return interaction.reply({ embeds: [res.changes ? Embed.success(t(gid, 'util.tag.deleted', { name })) : Embed.error(t(gid, 'util.tag.not_exist'))] });
   },
   async autocomplete(interaction) {
     const focused = interaction.options.getFocused().toLowerCase();
