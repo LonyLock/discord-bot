@@ -184,9 +184,10 @@ Prefer a process manager instead? `pm2 start src/index.js --name nexus-bot` also
 
 No Discord token is needed to sanity-check the codebase:
 ```bash
-npm run validate   # verifies all 91 commands build, and every event/service loads
+npm run validate   # verifies all commands build, and every event/service loads
+npm test           # unit tests (node:test) for time, leveling, helpers & automod patterns
 ```
-A GitHub Actions workflow (`.github/workflows/ci.yml`) runs this on every push and pull request,
+A GitHub Actions workflow (`.github/workflows/ci.yml`) runs both on every push and pull request,
 plus a `node --check` syntax pass over all source files.
 
 ## 🗂️ Project Structure
