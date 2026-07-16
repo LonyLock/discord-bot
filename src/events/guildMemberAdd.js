@@ -55,7 +55,7 @@ module.exports = {
           })
           .setFooter({ text: `ID: ${member.id}` })
           .setTimestamp();
-        channel.send({ embeds: [embed] }).catch(() => {});
+        channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
       }
     }
   },

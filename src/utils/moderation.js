@@ -56,7 +56,8 @@ async function logModAction(guild, { action, target, moderator, reason, extra })
 
   if (extra) embed.addFields({ name: 'Details', value: extra, inline: false });
 
-  channel.send({ embeds: [embed] }).catch(() => {});
+  // Logs must never ping anyone.
+  channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
 }
 
 /**

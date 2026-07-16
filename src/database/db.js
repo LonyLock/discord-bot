@@ -258,6 +258,12 @@ CREATE TABLE IF NOT EXISTS disabled_commands (
   command  TEXT NOT NULL,
   PRIMARY KEY (guild_id, command)
 );
+
+CREATE TABLE IF NOT EXISTS log_ignored_channels (
+  guild_id   TEXT NOT NULL,
+  channel_id TEXT NOT NULL,
+  PRIMARY KEY (guild_id, channel_id)
+);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -345,6 +351,31 @@ function trackCommand(name) {
   try { bumpStat.run(name); } catch { /* ignore */ }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Log-ignore list (channels excluded from logging)                  */
+/* ------------------------------------------------------------------ */
+const ignoreLogStmt = db.prepare(
+  'INSERT OR IGNORE INTO log_ignored_channels (guild_id, channel_id) VALUES (?, ?)'
+);
+const unignoreLogStmt = db.prepare(
+  'DELETE FROM log_ignored_channels WHERE guild_id = ? AND channel_id = ?'
+);
+const listIgnoredStmt = db.prepare(
+  'SELECT channel_id FROM log_ignored_channels WHERE guild_id = ?'
+);
+const isIgnoredStmt = db.prepare(
+  'SELECT 1 FROM log_ignored_channels WHERE guild_id = ? AND channel_id = ? LIMIT 1'
+);
+
+const ignoreLogChannel = (guildId, channelId) => ignoreLogStmt.run(guildId, channelId);
+const unignoreLogChannel = (guildId, channelId) => unignoreLogStmt.run(guildId, channelId);
+const listIgnoredLogChannels = (guildId) => listIgnoredStmt.all(guildId).map((r) => r.channel_id);
+
+/** True if ANY of the given channel/category ids is on the ignore list. */
+function isLogIgnored(guildId, ...channelIds) {
+  return channelIds.some((id) => id && isIgnoredStmt.get(guildId, id));
+}
+
 module.exports = {
   db,
   getGuildConfig,
@@ -354,4 +385,8 @@ module.exports = {
   getLevel,
   setLevel,
   trackCommand,
+  ignoreLogChannel,
+  unignoreLogChannel,
+  listIgnoredLogChannels,
+  isLogIgnored,
 };

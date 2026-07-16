@@ -1,7 +1,7 @@
 'use strict';
 
 const { SlashCommandBuilder, PermissionFlagsBits, ChannelType, EmbedBuilder } = require('discord.js');
-const { db, getGuildConfig, setGuildConfig } = require('../../database/db');
+const { db, getGuildConfig, setGuildConfig, listIgnoredLogChannels } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
 
@@ -163,7 +163,7 @@ function viewConfig(interaction) {
     .setTitle(`⚙️ Configuration — ${interaction.guild.name}`)
     .addFields(
       { name: 'General', value: `Prefix: \`${c.prefix || config.defaults.prefix}\``, inline: false },
-      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}`, inline: true },
+      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}\nIgnored: ${listIgnoredLogChannels(interaction.guild.id).length} channel(s)`, inline: true },
       { name: 'Greetings', value: `Welcome ${bool(c.welcome_enabled)}: ${ch(c.welcome_channel)}\nGoodbye ${bool(c.goodbye_enabled)}: ${ch(c.goodbye_channel)}\nAutorole: ${role(c.autorole)}`, inline: true },
       { name: 'Systems', value: `Leveling: ${bool(c.leveling_enabled)}\nEconomy: ${bool(c.economy_enabled)}\nAutomod: ${bool(c.automod_enabled)}`, inline: true },
       { name: 'Features', value: `Starboard: ${ch(c.starboard_channel)} (${c.starboard_threshold}⭐)\nSuggestions: ${ch(c.suggestion_channel)}\nTickets: ${c.ticket_category ? `<#${c.ticket_category}>` : '`not set`'}`, inline: true })

@@ -16,7 +16,14 @@ const crypto = require('node:crypto');
 const express = require('express');
 const session = require('express-session');
 
-const { db, getGuildConfig, setGuildConfig } = require('../database/db');
+const {
+  db,
+  getGuildConfig,
+  setGuildConfig,
+  listIgnoredLogChannels,
+  ignoreLogChannel,
+  unignoreLogChannel,
+} = require('../database/db');
 const logger = require('../utils/logger');
 const config = require('../../config.json');
 
@@ -193,6 +200,7 @@ function start(client) {
       textChannels,
       roles,
       categories,
+      logIgnored: listIgnoredLogChannels(guildId),
       saved: req.query.saved === '1',
       csrf: (req.session.csrf = crypto.randomBytes(16).toString('hex')),
     });
@@ -239,6 +247,16 @@ function start(client) {
       automod_anti_caps: bool(b.automod_anti_caps),
       automod_badwords: bool(b.automod_badwords),
     });
+
+    // Sync the log-ignore list from the multi-select (may be undefined, a
+    // single string, or an array of channel ids).
+    const desired = new Set(
+      [].concat(b.log_ignored || []).filter((v) => v && v !== 'none')
+    );
+    const current = new Set(listIgnoredLogChannels(guildId));
+    for (const id of current) if (!desired.has(id)) unignoreLogChannel(guildId, id);
+    for (const id of desired) if (!current.has(id)) ignoreLogChannel(guildId, id);
+
     logger.info(`Dashboard: ${req.session.user.username} updated settings for guild ${guildId}`);
     res.redirect(`/servers/${guildId}?saved=1`);
   });

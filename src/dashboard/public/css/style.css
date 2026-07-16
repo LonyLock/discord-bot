@@ -126,6 +126,9 @@ hr.divider { border: none; border-top: 1px solid var(--border); margin: 18px 0; 
 .input-short { max-width: 200px; }
 textarea.input { resize: vertical; }
 select.input { cursor: pointer; }
+select.input-multi { height: auto; padding: 6px; }
+select.input-multi option { padding: 6px 8px; border-radius: 4px; }
+select.input-multi option:checked { background: var(--primary) linear-gradient(0deg, var(--primary), var(--primary)); color: #fff; }
 
 /* Toggle switch */
 .switch { position: relative; display: inline-block; width: 42px; height: 24px; }

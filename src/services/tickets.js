@@ -147,7 +147,7 @@ async function closeTicket(channel, closedBy) {
         )
         .setFooter({ text: config.brand.footer })
         .setTimestamp();
-      logChannel.send({ embeds: [embed] }).catch(() => {});
+      logChannel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
     }
   }
 

@@ -1,7 +1,7 @@
 'use strict';
 
 const { Events, EmbedBuilder } = require('discord.js');
-const { getGuildConfig } = require('../database/db');
+const { getGuildConfig, isLogIgnored } = require('../database/db');
 const config = require('../../config.json');
 const { truncate } = require('../utils/helpers');
 
@@ -12,6 +12,8 @@ module.exports = {
     if (oldMessage.content === newMessage.content) return; // embed loads etc.
     const cfg = getGuildConfig(newMessage.guild.id);
     if (!cfg.message_log_channel) return;
+    // Respect the per-guild ignore list (by channel or its parent category).
+    if (isLogIgnored(newMessage.guild.id, newMessage.channel.id, newMessage.channel.parentId)) return;
     const channel = newMessage.guild.channels.cache.get(cfg.message_log_channel);
     if (!channel) return;
 
@@ -29,6 +31,6 @@ module.exports = {
       )
       .setFooter({ text: `Author ID: ${newMessage.author?.id || 'unknown'}` })
       .setTimestamp();
-    channel.send({ embeds: [embed] }).catch(() => {});
+    channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
   },
 };

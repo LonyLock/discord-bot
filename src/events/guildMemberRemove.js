@@ -46,7 +46,7 @@ module.exports = {
           .addFields({ name: 'Roles', value: roles.slice(0, 1024) })
           .setFooter({ text: `ID: ${member.id}` })
           .setTimestamp();
-        channel.send({ embeds: [embed] }).catch(() => {});
+        channel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
       }
     }
   },

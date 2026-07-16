@@ -74,6 +74,19 @@
     <div class="field"><label>Moderation log channel</label><%- channelSelect('mod_log_channel', cfg.mod_log_channel, textChannels) %></div>
     <div class="field"><label>Message log (edits &amp; deletes)</label><%- channelSelect('message_log_channel', cfg.message_log_channel, textChannels) %></div>
     <div class="field"><label>Join / leave log</label><%- channelSelect('join_log_channel', cfg.join_log_channel, textChannels) %></div>
+    <hr class="divider" />
+    <div class="field">
+      <label>Ignored channels <small class="muted">(logging is disabled in these)</small></label>
+      <select name="log_ignored" class="input input-multi" multiple size="6">
+        <% textChannels.forEach((c) => { %>
+          <option value="<%= c.id %>" <%= logIgnored.includes(c.id) ? 'selected' : '' %>>#<%= c.name %></option>
+        <% }) %>
+        <% categories.forEach((c) => { %>
+          <option value="<%= c.id %>" <%= logIgnored.includes(c.id) ? 'selected' : '' %>>📁 <%= c.name %> (category)</option>
+        <% }) %>
+      </select>
+      <small class="muted">Ctrl/Cmd-click to select multiple. Selecting a category ignores every channel inside it. Logs never ping members.</small>
+    </div>
   </div>
 
   <div class="card">

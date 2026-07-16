@@ -75,7 +75,7 @@ An optional browser dashboard (embedded in the bot process) for configuring serv
 - **Sticky messages** — keep a note pinned to the bottom of a channel
 - **Counting game** — collaborative counting channel with best-streak tracking
 - **Per-server command toggles** — disable any command with `/command disable`
-- **Welcome/Goodbye** & **join/leave + message edit/delete logging**
+- **Welcome/Goodbye** & **join/leave + message edit/delete logging** — logs never ping members, and `/logignore` (or the dashboard) excludes chosen channels/categories from logging
 
 ---
 
