@@ -61,7 +61,8 @@ CREATE TABLE IF NOT EXISTS guild_config (
   antiraid_enabled    INTEGER DEFAULT 0,
   antiraid_min_age_days INTEGER DEFAULT 0,
   antiraid_action     TEXT DEFAULT 'kick',
-  antiraid_join_threshold INTEGER DEFAULT 0
+  antiraid_join_threshold INTEGER DEFAULT 0,
+  verify_role         TEXT
 );
 
 CREATE TABLE IF NOT EXISTS levels (
@@ -282,6 +283,17 @@ CREATE TABLE IF NOT EXISTS blacklist_guilds (
   reason   TEXT,
   added_at INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS button_roles (
+  id         INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id   TEXT NOT NULL,
+  channel_id TEXT NOT NULL,
+  message_id TEXT NOT NULL,
+  role_id    TEXT NOT NULL,
+  label      TEXT NOT NULL,
+  emoji      TEXT,
+  style      INTEGER DEFAULT 1
+);
 `);
 
 /* ------------------------------------------------------------------ */
@@ -296,6 +308,7 @@ const MIGRATIONS = {
   antiraid_min_age_days: 'INTEGER DEFAULT 0',
   antiraid_action: "TEXT DEFAULT 'kick'",
   antiraid_join_threshold: 'INTEGER DEFAULT 0',
+  verify_role: 'TEXT',
 };
 for (const [col, def] of Object.entries(MIGRATIONS)) {
   if (!existingCols.has(col)) {

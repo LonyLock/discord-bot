@@ -1,0 +1,40 @@
+<%- include('partials/header', { title: guild.name + ' — Button Roles' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🔘 Button Roles</h2>
+  <p class="muted">
+    Modern self-assignable roles via buttons. Creating them requires the bot to post a message,
+    so use <code>/buttonrole create</code> and <code>/buttonrole add</code> in Discord. You can review and remove buttons here.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Configured <span class="badge"><%= buttonRoles.length %></span></h2>
+  <% if (!buttonRoles.length) { %>
+    <p class="muted">No button roles configured yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Label</th><th>Role</th><th>Message</th><th></th></tr></thead>
+      <tbody>
+        <% buttonRoles.forEach((br) => { %>
+          <tr>
+            <td><code><%= br.label %></code></td>
+            <td>@<%= br.roleName %></td>
+            <td><a href="<%= br.link %>" target="_blank" rel="noopener">Jump ↗</a></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/buttonroles">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="button_id" value="<%= br.id %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

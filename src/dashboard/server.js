@@ -32,6 +32,7 @@ const {
 } = require('../database/db');
 const logger = require('../utils/logger');
 const config = require('../../config.json');
+const { buildRows } = require('../services/buttonroles');
 
 const MANAGE_GUILD = 0x20n;
 const DISCORD_API = 'https://discord.com/api/v10';
@@ -65,6 +66,12 @@ const q = {
 
   rrList: db.prepare('SELECT * FROM reaction_roles WHERE guild_id = ?'),
   rrDel: db.prepare('DELETE FROM reaction_roles WHERE message_id = ? AND emoji = ?'),
+
+  brList: db.prepare('SELECT * FROM button_roles WHERE guild_id = ? ORDER BY message_id, id'),
+  brGet: db.prepare('SELECT * FROM button_roles WHERE id = ? AND guild_id = ?'),
+  brDel: db.prepare('DELETE FROM button_roles WHERE id = ? AND guild_id = ?'),
+  brCount: db.prepare('SELECT COUNT(*) AS c FROM button_roles WHERE message_id = ?'),
+  brDelMsg: db.prepare('DELETE FROM button_roles WHERE message_id = ?'),
 };
 
 function hasManageGuild(guild) {
@@ -283,6 +290,7 @@ function start(client) {
       goodbye_message: b.goodbye_message?.slice(0, 1500) || null,
       autorole: orNull(b.autorole),
       mute_role: orNull(b.mute_role),
+      verify_role: orNull(b.verify_role),
       mod_log_channel: orNull(b.mod_log_channel),
       message_log_channel: orNull(b.message_log_channel),
       join_log_channel: orNull(b.join_log_channel),
@@ -542,6 +550,35 @@ function start(client) {
       q.rrDel.run(req.body.message_id, req.body.emoji);
     }
     res.redirect(`/servers/${guild.id}/reactionroles`);
+  });
+
+  /* ----- Button roles (list + remove) ----- */
+  app.get('/servers/:id/buttonroles', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const rows = q.brList.all(guild.id).map((r) => ({
+      ...r,
+      roleName: guild.roles.cache.get(r.role_id)?.name || r.role_id,
+      link: `https://discord.com/channels/${guild.id}/${r.channel_id}/${r.message_id}`,
+    }));
+    res.render('buttonroles', { active: 'buttonroles', guild: guildMeta(guild), buttonRoles: rows, csrf: newCsrf(req) });
+  });
+  app.post('/servers/:id/buttonroles', requireAuth, async (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    if (req.body._action === 'remove' && req.body.button_id) {
+      const row = q.brGet.get(parseInt(req.body.button_id, 10), guild.id);
+      if (row) {
+        q.brDel.run(row.id, guild.id);
+        // Rebuild the live message's buttons (or delete the record set if empty).
+        const channel = guild.channels.cache.get(row.channel_id);
+        const msg = channel && (await channel.messages.fetch(row.message_id).catch(() => null));
+        if (msg) await msg.edit({ components: buildRows(row.message_id) }).catch(() => {});
+        if (!q.brCount.get(row.message_id).c) q.brDelMsg.run(row.message_id);
+      }
+    }
+    res.redirect(`/servers/${guild.id}/buttonroles`);
   });
 
   /* ----- Leaderboards ----- */

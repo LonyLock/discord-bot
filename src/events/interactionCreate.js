@@ -143,6 +143,47 @@ async function handleAutocomplete(interaction, client) {
 async function handleButton(interaction, client) {
   const id = interaction.customId;
 
+  // --- Button roles (toggle) ---
+  if (id.startsWith('buttonrole:')) {
+    const roleId = id.slice('buttonrole:'.length);
+    const role = interaction.guild.roles.cache.get(roleId);
+    if (!role) return interaction.reply({ embeds: [Embed.error('That role no longer exists.')], flags: MessageFlags.Ephemeral });
+    if (role.position >= interaction.guild.members.me.roles.highest.position) {
+      return interaction.reply({ embeds: [Embed.error('I can no longer assign that role (hierarchy).')], flags: MessageFlags.Ephemeral });
+    }
+    const has = interaction.member.roles.cache.has(roleId);
+    try {
+      if (has) await interaction.member.roles.remove(role, 'Button role');
+      else await interaction.member.roles.add(role, 'Button role');
+    } catch {
+      return interaction.reply({ embeds: [Embed.error('I could not update your roles.')], flags: MessageFlags.Ephemeral });
+    }
+    return interaction.reply({
+      embeds: [has ? Embed.warn(`Removed the ${role} role.`) : Embed.success(`You now have the ${role} role.`)],
+      flags: MessageFlags.Ephemeral,
+    });
+  }
+
+  // --- Verification ---
+  if (id === 'verify_button') {
+    const cfg = getGuildConfig(interaction.guild.id);
+    if (!cfg.verify_role) return interaction.reply({ embeds: [Embed.error('Verification is not configured.')], flags: MessageFlags.Ephemeral });
+    const role = interaction.guild.roles.cache.get(cfg.verify_role);
+    if (!role) return interaction.reply({ embeds: [Embed.error('The verified role no longer exists. Ask an admin.')], flags: MessageFlags.Ephemeral });
+    if (interaction.member.roles.cache.has(role.id)) {
+      return interaction.reply({ embeds: [Embed.info(null, 'You are already verified.')], flags: MessageFlags.Ephemeral });
+    }
+    if (role.position >= interaction.guild.members.me.roles.highest.position) {
+      return interaction.reply({ embeds: [Embed.error('I cannot assign the verified role (hierarchy). Ask an admin.')], flags: MessageFlags.Ephemeral });
+    }
+    try {
+      await interaction.member.roles.add(role, 'Verified');
+    } catch {
+      return interaction.reply({ embeds: [Embed.error('I could not verify you. Ask an admin.')], flags: MessageFlags.Ephemeral });
+    }
+    return interaction.reply({ embeds: [Embed.success('You are now verified — welcome! 🎉')], flags: MessageFlags.Ephemeral });
+  }
+
   // --- Tickets ---
   if (id === 'ticket_open') {
     await interaction.deferReply({ flags: MessageFlags.Ephemeral });
