@@ -26,6 +26,18 @@ Toggleable per-server filters via `/automod`:
 - Custom bad-words filter
 - Members with *Manage Messages* are automatically exempt
 
+### 🛡️ Anti-Raid
+Server protection via `/antiraid` (or the dashboard):
+- New-account gate — kick/ban/timeout accounts younger than a configurable age
+- Join-burst detection — alerts the mod-log when N members join within 10 seconds
+
+### 📋 Audit Logging
+- Message edit/delete logs (with a per-channel/category ignore list)
+- Join/leave **and member updates** — nickname changes, role add/remove, timeouts
+- Server structure — channel & role create/delete (server-log channel)
+- Bans/unbans done directly in Discord (via the audit log, de-duplicated against the bot's own actions)
+- Logs never ping members
+
 ### 🪙 Economy
 `balance` · `daily` (with streaks) · `weekly` · `work` · `crime` · `rob` · `deposit` · `withdraw` ·
 `pay` · `richest` (leaderboard) · `shop` · `additem` · `removeitem` · `buy` (with role rewards) ·

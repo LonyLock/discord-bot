@@ -3,6 +3,7 @@
 const { Events, EmbedBuilder } = require('discord.js');
 const { getGuildConfig } = require('../database/db');
 const config = require('../../config.json');
+const antiraid = require('../services/antiraid');
 
 function render(template, member) {
   return (template || '')
@@ -15,7 +16,11 @@ function render(template, member) {
 
 module.exports = {
   name: Events.GuildMemberAdd,
-  async execute(member) {
+  async execute(member, client) {
+    // Anti-raid runs first — if the member is removed, skip everything else.
+    const removed = await antiraid.check(member, client).catch(() => false);
+    if (removed) return;
+
     const cfg = getGuildConfig(member.guild.id);
 
     // Auto-role.

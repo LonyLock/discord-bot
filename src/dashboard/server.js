@@ -286,6 +286,7 @@ function start(client) {
       mod_log_channel: orNull(b.mod_log_channel),
       message_log_channel: orNull(b.message_log_channel),
       join_log_channel: orNull(b.join_log_channel),
+      server_log_channel: orNull(b.server_log_channel),
       leveling_enabled: bool(b.leveling_enabled),
       level_up_enabled: bool(b.level_up_enabled),
       level_up_channel: orNull(b.level_up_channel),
@@ -304,6 +305,10 @@ function start(client) {
       automod_anti_mention: bool(b.automod_anti_mention),
       automod_anti_caps: bool(b.automod_anti_caps),
       automod_badwords: bool(b.automod_badwords),
+      antiraid_enabled: bool(b.antiraid_enabled),
+      antiraid_min_age_days: Math.max(0, Math.min(365, parseInt(b.antiraid_min_age_days, 10) || 0)),
+      antiraid_action: ['kick', 'ban', 'timeout'].includes(b.antiraid_action) ? b.antiraid_action : 'kick',
+      antiraid_join_threshold: Math.max(0, Math.min(100, parseInt(b.antiraid_join_threshold, 10) || 0)),
     });
 
     // Note: the log-ignore list is managed on its own /logignore page so that

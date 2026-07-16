@@ -55,6 +55,8 @@ client.startedAt = Date.now();
 client.spamTracker = new Map();
 // Per-channel cache of the last deleted message (for /snipe).
 client.snipes = new Map();
+// Per-guild recent-join timestamps for anti-raid burst detection.
+client.joinTracker = new Map();
 // Music subsystem (lazy — see music commands). Maps guildId -> queue.
 client.musicQueues = new Map();
 

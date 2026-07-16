@@ -56,7 +56,12 @@ CREATE TABLE IF NOT EXISTS guild_config (
   automod_anti_link   INTEGER DEFAULT 0,
   automod_anti_mention INTEGER DEFAULT 0,
   automod_anti_caps   INTEGER DEFAULT 0,
-  automod_badwords    INTEGER DEFAULT 0
+  automod_badwords    INTEGER DEFAULT 0,
+  server_log_channel  TEXT,
+  antiraid_enabled    INTEGER DEFAULT 0,
+  antiraid_min_age_days INTEGER DEFAULT 0,
+  antiraid_action     TEXT DEFAULT 'kick',
+  antiraid_join_threshold INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS levels (
@@ -264,6 +269,7 @@ CREATE TABLE IF NOT EXISTS log_ignored_channels (
   channel_id TEXT NOT NULL,
   PRIMARY KEY (guild_id, channel_id)
 );
+-- migrations for older databases are applied below the schema block.
 
 CREATE TABLE IF NOT EXISTS blacklist_users (
   user_id  TEXT PRIMARY KEY,
@@ -277,6 +283,25 @@ CREATE TABLE IF NOT EXISTS blacklist_guilds (
   added_at INTEGER NOT NULL
 );
 `);
+
+/* ------------------------------------------------------------------ */
+/*  Migrations — add columns introduced after a database already      */
+/*  existed. CREATE TABLE IF NOT EXISTS never alters an existing table,*/
+/*  so new guild_config columns are added here (idempotent).          */
+/* ------------------------------------------------------------------ */
+const existingCols = new Set(db.prepare('PRAGMA table_info(guild_config)').all().map((c) => c.name));
+const MIGRATIONS = {
+  server_log_channel: 'TEXT',
+  antiraid_enabled: 'INTEGER DEFAULT 0',
+  antiraid_min_age_days: 'INTEGER DEFAULT 0',
+  antiraid_action: "TEXT DEFAULT 'kick'",
+  antiraid_join_threshold: 'INTEGER DEFAULT 0',
+};
+for (const [col, def] of Object.entries(MIGRATIONS)) {
+  if (!existingCols.has(col)) {
+    db.exec(`ALTER TABLE guild_config ADD COLUMN ${col} ${def}`);
+  }
+}
 
 /* ------------------------------------------------------------------ */
 /*  Guild config helpers (with in-memory cache)                       */

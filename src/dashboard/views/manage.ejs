@@ -67,7 +67,8 @@
     <h2>📋 Logging</h2>
     <div class="field"><label>Moderation log channel</label><%- channelSelect('mod_log_channel', cfg.mod_log_channel, textChannels) %></div>
     <div class="field"><label>Message log (edits &amp; deletes)</label><%- channelSelect('message_log_channel', cfg.message_log_channel, textChannels) %></div>
-    <div class="field"><label>Join / leave log</label><%- channelSelect('join_log_channel', cfg.join_log_channel, textChannels) %></div>
+    <div class="field"><label>Join / leave &amp; member-update log</label><%- channelSelect('join_log_channel', cfg.join_log_channel, textChannels) %></div>
+    <div class="field"><label>Server structure log <small class="muted">(channels &amp; roles created/deleted)</small></label><%- channelSelect('server_log_channel', cfg.server_log_channel, textChannels) %></div>
     <hr class="divider" />
     <div class="field callout">
       <span>🙈 <strong>Ignored channels</strong> — exclude specific channels or whole categories from logging.</span>
@@ -131,6 +132,32 @@
       <div class="toggle-item"><span>Anti-Mass-Mention</span><%- toggle('automod_anti_mention', cfg.automod_anti_mention) %></div>
       <div class="toggle-item"><span>Anti-Caps</span><%- toggle('automod_anti_caps', cfg.automod_anti_caps) %></div>
       <div class="toggle-item"><span>Bad-Words Filter</span><%- toggle('automod_badwords', cfg.automod_badwords) %></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>🛡️ Anti-Raid</h2>
+    <div class="field-row">
+      <div class="field"><label>Enable Anti-Raid <%- toggle('antiraid_enabled', cfg.antiraid_enabled) %></label></div>
+    </div>
+    <small class="muted">Alerts and actions are sent to the mod-log channel.</small>
+    <div class="field-row">
+      <div class="field">
+        <label>Min account age (days) <small class="muted">(0 = off)</small></label>
+        <input class="input input-short" type="number" name="antiraid_min_age_days" min="0" max="365" value="<%= cfg.antiraid_min_age_days || 0 %>" />
+      </div>
+      <div class="field">
+        <label>Action on new accounts</label>
+        <select name="antiraid_action" class="input">
+          <% ['kick','ban','timeout'].forEach((a) => { %>
+            <option value="<%= a %>" <%= (cfg.antiraid_action || 'kick') === a ? 'selected' : '' %>><%= a === 'timeout' ? 'Timeout (1h)' : a.charAt(0).toUpperCase() + a.slice(1) %></option>
+          <% }) %>
+        </select>
+      </div>
+      <div class="field">
+        <label>Join-burst alert <small class="muted">(joins / 10s, 0 = off)</small></label>
+        <input class="input input-short" type="number" name="antiraid_join_threshold" min="0" max="100" value="<%= cfg.antiraid_join_threshold || 0 %>" />
+      </div>
     </div>
   </div>
 
