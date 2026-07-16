@@ -2,6 +2,7 @@
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 const insertItem = db.prepare('INSERT INTO shop_items (guild_id, name, description, price, role_id, stock) VALUES (?, ?, ?, ?, ?, ?)');
 
@@ -25,6 +26,6 @@ module.exports = {
     const role = interaction.options.getRole('role');
     const stock = interaction.options.getInteger('stock');
     const res = insertItem.run(interaction.guild.id, name, description, price, role?.id || null, stock ?? -1);
-    return interaction.reply({ embeds: [Embed.success(`Added **${name}** to the shop (item #${res.lastInsertRowid}).`)] });
+    return interaction.reply({ embeds: [Embed.success(t(interaction.guild.id, 'econ.additem.success', { name, id: res.lastInsertRowid }))] });
   },
 };
