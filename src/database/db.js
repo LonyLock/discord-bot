@@ -294,6 +294,17 @@ CREATE TABLE IF NOT EXISTS button_roles (
   emoji      TEXT,
   style      INTEGER DEFAULT 1
 );
+
+CREATE TABLE IF NOT EXISTS scheduled_messages (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  guild_id    TEXT NOT NULL,
+  channel_id  TEXT NOT NULL,
+  content     TEXT NOT NULL,
+  next_run    INTEGER NOT NULL,
+  interval_ms INTEGER DEFAULT 0,
+  created_by  TEXT NOT NULL,
+  created_at  INTEGER NOT NULL
+);
 `);
 
 /* ------------------------------------------------------------------ */

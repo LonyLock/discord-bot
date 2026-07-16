@@ -33,6 +33,7 @@ const {
 const logger = require('../utils/logger');
 const config = require('../../config.json');
 const { buildRows } = require('../services/buttonroles');
+const { parseDuration, formatDuration } = require('../utils/time');
 
 const MANAGE_GUILD = 0x20n;
 const DISCORD_API = 'https://discord.com/api/v10';
@@ -72,6 +73,10 @@ const q = {
   brDel: db.prepare('DELETE FROM button_roles WHERE id = ? AND guild_id = ?'),
   brCount: db.prepare('SELECT COUNT(*) AS c FROM button_roles WHERE message_id = ?'),
   brDelMsg: db.prepare('DELETE FROM button_roles WHERE message_id = ?'),
+
+  schedList: db.prepare('SELECT * FROM scheduled_messages WHERE guild_id = ? ORDER BY next_run'),
+  schedAdd: db.prepare('INSERT INTO scheduled_messages (guild_id, channel_id, content, next_run, interval_ms, created_by, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)'),
+  schedDel: db.prepare('DELETE FROM scheduled_messages WHERE id = ? AND guild_id = ?'),
 };
 
 function hasManageGuild(guild) {
@@ -579,6 +584,35 @@ function start(client) {
       }
     }
     res.redirect(`/servers/${guild.id}/buttonroles`);
+  });
+
+  /* ----- Scheduled messages ----- */
+  app.get('/servers/:id/scheduled', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const { textChannels } = guildLists(guild);
+    const rows = q.schedList.all(guild.id).map((r) => ({
+      ...r,
+      channelName: guild.channels.cache.get(r.channel_id)?.name || r.channel_id,
+      repeat: r.interval_ms ? formatDuration(r.interval_ms) : null,
+    }));
+    res.render('scheduled', { active: 'scheduled', guild: guildMeta(guild), textChannels, scheduled: rows, csrf: newCsrf(req) });
+  });
+  app.post('/servers/:id/scheduled', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const b = req.body;
+    if (b._action === 'add' && b.channel && b.message && b.delay) {
+      const delay = parseDuration(b.delay);
+      const interval = b.repeat ? parseDuration(b.repeat) : 0;
+      if (delay && delay >= 30_000 && guild.channels.cache.has(b.channel) && (!b.repeat || (interval && interval >= 600_000))) {
+        q.schedAdd.run(guild.id, b.channel, b.message.slice(0, 2000), Date.now() + delay, interval || 0, req.session.user.id, Date.now());
+      }
+    } else if (b._action === 'remove' && b.sched_id) {
+      q.schedDel.run(parseInt(b.sched_id, 10), guild.id);
+    }
+    res.redirect(`/servers/${guild.id}/scheduled`);
   });
 
   /* ----- Leaderboards ----- */

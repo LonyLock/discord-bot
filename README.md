@@ -67,6 +67,8 @@ and automatic drawing when the timer expires.
 ### 🔧 Utility
 `help` (interactive menu) · `ping` · `poll` · `remind me/list/delete` · `afk` · `tag` (custom commands) ·
 `embed` (builder) · `say` · `math` (safe evaluator) · `timestamp` · `base64` · `snipe` · `suggest`
+- **Scheduled announcements** (`/schedule`) — one-time or recurring messages to a channel (also in the dashboard)
+- **Data export & privacy** — `/export` (admin JSON backup of the server's data) and `/mydata export|delete` (per-user data download / self-service deletion)
 
 ### ℹ️ Information
 `userinfo` · `serverinfo` · `botinfo` · `avatar` · `roleinfo` · `channelinfo` · `membercount` · `servericon`
