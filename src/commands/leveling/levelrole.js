@@ -3,6 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
+const { t } = require('../../i18n');
 
 const setRole = db.prepare('INSERT OR REPLACE INTO level_roles (guild_id, level, role_id) VALUES (?, ?, ?)');
 const delRole = db.prepare('DELETE FROM level_roles WHERE guild_id = ? AND level = ?');
@@ -23,23 +24,24 @@ module.exports = {
     .addSubcommand((s) => s.setName('list').setDescription('List all level rewards'))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageGuild),
   async execute(interaction) {
+    const gid = interaction.guild.id;
     const sub = interaction.options.getSubcommand();
     if (sub === 'set') {
       const level = interaction.options.getInteger('level');
       const role = interaction.options.getRole('role');
       if (role.position >= interaction.guild.members.me.roles.highest.position)
-        return interaction.reply({ embeds: [Embed.error('That role is higher than mine; I could not assign it.')], ephemeral: true });
-      setRole.run(interaction.guild.id, level, role.id);
-      return interaction.reply({ embeds: [Embed.success(`Members will now receive ${role} at **level ${level}**.`)] });
+        return interaction.reply({ embeds: [Embed.error(t(gid, 'lvl.levelrole.too_high'))], ephemeral: true });
+      setRole.run(gid, level, role.id);
+      return interaction.reply({ embeds: [Embed.success(t(gid, 'lvl.levelrole.set', { role: role.toString(), level }))] });
     }
     if (sub === 'remove') {
       const level = interaction.options.getInteger('level');
-      const res = delRole.run(interaction.guild.id, level);
-      return interaction.reply({ embeds: [res.changes ? Embed.success(`Removed the reward for level ${level}.`) : Embed.error('No reward set for that level.')] });
+      const res = delRole.run(gid, level);
+      return interaction.reply({ embeds: [res.changes ? Embed.success(t(gid, 'lvl.levelrole.removed', { level })) : Embed.error(t(gid, 'lvl.levelrole.not_set'))] });
     }
-    const rows = listRoles.all(interaction.guild.id);
-    const embed = new EmbedBuilder().setColor(config.brand.color).setTitle('🎖️ Level Rewards')
-      .setDescription(rows.map((r) => `Level **${r.level}** → <@&${r.role_id}>`).join('\n') || 'No level rewards configured.');
+    const rows = listRoles.all(gid);
+    const embed = new EmbedBuilder().setColor(config.brand.color).setTitle(t(gid, 'lvl.levelrole.list_title'))
+      .setDescription(rows.map((r) => t(gid, 'lvl.levelrole.list_entry', { level: r.level, role: r.role_id })).join('\n') || t(gid, 'lvl.levelrole.none'));
     return interaction.reply({ embeds: [embed] });
   },
 };

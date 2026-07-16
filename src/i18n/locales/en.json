@@ -165,5 +165,22 @@
   "util.tag.saved": "Tag `{name}` saved. Use it with `/tag show {name}` or `{prefix}{name}`.",
   "util.tag.deleted": "Deleted tag `{name}`.",
   "util.timestamp.invalid": "Invalid duration.",
-  "util.timestamp.title": "🕒 Timestamp Generator"
+  "util.timestamp.title": "🕒 Timestamp Generator",
+  "lvl.disabled": "Leveling is disabled on this server.",
+  "lvl.rank.title": "{user}'s Rank",
+  "lvl.rank.level": "Level",
+  "lvl.rank.rank": "Rank",
+  "lvl.rank.total_xp": "Total XP",
+  "lvl.rank.progress": "Progress — {xp} / {needed} XP",
+  "lvl.levels.title": "📈 Level Leaderboard — {server}",
+  "lvl.no_data": "No data yet.",
+  "lvl.givexp.added": "Added **{amount}** XP to {user}.",
+  "lvl.givexp.removed": "Removed **{amount}** XP from {user}.",
+  "lvl.levelrole.too_high": "That role is higher than mine; I could not assign it.",
+  "lvl.levelrole.set": "Members will now receive {role} at **level {level}**.",
+  "lvl.levelrole.removed": "Removed the reward for level {level}.",
+  "lvl.levelrole.not_set": "No reward set for that level.",
+  "lvl.levelrole.list_title": "🎖️ Level Rewards",
+  "lvl.levelrole.list_entry": "Level **{level}** → <@&{role}>",
+  "lvl.levelrole.none": "No level rewards configured."
 }
