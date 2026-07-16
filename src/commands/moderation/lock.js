@@ -1,6 +1,7 @@
 'use strict';
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'moderation',
@@ -13,8 +14,9 @@ module.exports = {
     .addStringOption((o) => o.setName('reason').setDescription('Reason'))
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
   async execute(interaction) {
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+    const gid = interaction.guild.id;
+    const reason = interaction.options.getString('reason') || t(gid, 'mod.no_reason');
     await interaction.channel.permissionOverwrites.edit(interaction.guild.roles.everyone, { SendMessages: false }, { reason });
-    return interaction.reply({ embeds: [Embed.success(`🔒 This channel has been locked. | ${reason}`)] });
+    return interaction.reply({ embeds: [Embed.success(t(gid, 'mod.lock.success', { reason }))] });
   },
 };

@@ -3,6 +3,7 @@
 const { EmbedBuilder } = require('discord.js');
 const { db, getGuildConfig } = require('../database/db');
 const config = require('../../config.json');
+const { t } = require('../i18n');
 
 const insertLog = db.prepare(`
   INSERT INTO modlogs (guild_id, user_id, moderator_id, action, reason, timestamp)
@@ -69,18 +70,19 @@ function checkHierarchy(interaction, targetMember) {
   const me = interaction.guild.members.me;
   const author = interaction.member;
 
-  if (targetMember.id === interaction.user.id) return "You can't target yourself.";
-  if (targetMember.id === interaction.client.user.id) return "I can't target myself.";
-  if (targetMember.id === interaction.guild.ownerId) return "You can't target the server owner.";
+  const gid = interaction.guild.id;
+  if (targetMember.id === interaction.user.id) return t(gid, 'mod.hierarchy.self');
+  if (targetMember.id === interaction.client.user.id) return t(gid, 'mod.hierarchy.me');
+  if (targetMember.id === interaction.guild.ownerId) return t(gid, 'mod.hierarchy.owner');
 
   if (
     author.id !== interaction.guild.ownerId &&
     author.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0
   ) {
-    return 'You cannot target someone with an equal or higher role than you.';
+    return t(gid, 'mod.hierarchy.higher_than_you');
   }
   if (me.roles.highest.comparePositionTo(targetMember.roles.highest) <= 0) {
-    return 'My role is not high enough to perform this action on that member.';
+    return t(gid, 'mod.hierarchy.higher_than_me');
   }
   return null;
 }

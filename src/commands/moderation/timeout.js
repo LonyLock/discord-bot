@@ -3,6 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const Embed = require('../../utils/embed');
 const { logModAction, checkHierarchy } = require('../../utils/moderation');
 const { parseDuration, formatDuration } = require('../../utils/time');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'moderation',
@@ -17,18 +18,19 @@ module.exports = {
     .addStringOption((o) => o.setName('reason').setDescription('Reason for the timeout'))
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
   async execute(interaction) {
+    const gid = interaction.guild.id;
     const user = interaction.options.getUser('user');
     const durationStr = interaction.options.getString('duration');
-    const reason = interaction.options.getString('reason') || 'No reason provided';
+    const reason = interaction.options.getString('reason') || t(gid, 'mod.no_reason');
     const ms = parseDuration(durationStr);
     if (!ms || ms < 5000 || ms > 2419200000)
-      return interaction.reply({ embeds: [Embed.error('Provide a valid duration between 5s and 28d.')], ephemeral: true });
+      return interaction.reply({ embeds: [Embed.error(t(gid, 'mod.timeout.invalid_duration'))], ephemeral: true });
     const member = await interaction.guild.members.fetch(user.id).catch(() => null);
-    if (!member) return interaction.reply({ embeds: [Embed.error('That user is not in this server.')], ephemeral: true });
+    if (!member) return interaction.reply({ embeds: [Embed.error(t(gid, 'mod.not_in_server'))], ephemeral: true });
     const hierErr = checkHierarchy(interaction, member);
     if (hierErr) return interaction.reply({ embeds: [Embed.error(hierErr)], ephemeral: true });
     await member.timeout(ms, `${interaction.user.tag}: ${reason}`).catch((e) => { throw e; });
     await logModAction(interaction.guild, { action: 'timeout', target: user, moderator: interaction.user, reason, extra: `Duration: ${formatDuration(ms)}` });
-    return interaction.reply({ embeds: [Embed.success(`**${user.tag}** has been timed out for **${formatDuration(ms)}**. | ${reason}`)] });
+    return interaction.reply({ embeds: [Embed.success(t(gid, 'mod.timeout.success', { user: user.tag, duration: formatDuration(ms), reason }))] });
   },
 };

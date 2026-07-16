@@ -3,6 +3,7 @@ const { SlashCommandBuilder, PermissionFlagsBits, EmbedBuilder } = require('disc
 const Embed = require('../../utils/embed');
 const { db } = require('../../database/db');
 const config = require('../../../config.json');
+const { t } = require('../../i18n');
 
 const listWarn = db.prepare('SELECT * FROM warnings WHERE guild_id = ? AND user_id = ? ORDER BY timestamp DESC');
 
@@ -16,16 +17,17 @@ module.exports = {
     .addUserOption((o) => o.setName('user').setDescription('The member').setRequired(true))
     .setDefaultMemberPermissions(PermissionFlagsBits.ModerateMembers),
   async execute(interaction) {
+    const gid = interaction.guild.id;
     const user = interaction.options.getUser('user');
-    const rows = listWarn.all(interaction.guild.id, user.id);
-    if (!rows.length) return interaction.reply({ embeds: [Embed.info('Warnings', `**${user.tag}** has no warnings. 🎉`)] });
+    const rows = listWarn.all(gid, user.id);
+    if (!rows.length) return interaction.reply({ embeds: [Embed.info('Warnings', t(gid, 'mod.warnings.none', { user: user.tag }))] });
     const embed = new EmbedBuilder()
       .setColor(config.brand.warnColor)
-      .setTitle(`Warnings for ${user.tag}`)
+      .setTitle(t(gid, 'mod.warnings.title', { user: user.tag }))
       .setThumbnail(user.displayAvatarURL())
-      .setDescription(rows.slice(0, 15).map((w, i) =>
-        `**#${w.id}** • <t:${Math.floor(w.timestamp / 1000)}:R>\nBy <@${w.moderator_id}> — ${w.reason}`).join('\n\n'))
-      .setFooter({ text: `Total: ${rows.length} warning(s)` })
+      .setDescription(rows.slice(0, 15).map((w) =>
+        `**#${w.id}** • <t:${Math.floor(w.timestamp / 1000)}:R>\n${t(gid, 'mod.warnings.entry', { moderator: w.moderator_id, reason: w.reason })}`).join('\n\n'))
+      .setFooter({ text: t(gid, 'mod.warnings.total', { count: rows.length }) })
       .setTimestamp();
     return interaction.reply({ embeds: [embed] });
   },
