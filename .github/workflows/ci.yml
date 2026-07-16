@@ -23,5 +23,8 @@ jobs:
       - name: Validate commands, events & services load
         run: npm run validate
 
+      - name: Run unit tests
+        run: npm test
+
       - name: Syntax-check all source files
-        run: node --check src/index.js && find src scripts -name '*.js' -exec node --check {} +
+        run: node --check src/index.js && find src scripts test -name '*.js' -exec node --check {} +

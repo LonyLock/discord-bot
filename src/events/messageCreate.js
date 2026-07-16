@@ -5,6 +5,7 @@ const { db, getGuildConfig, getLevel, setLevel } = require('../database/db');
 const leveling = require('../utils/leveling');
 const config = require('../../config.json');
 const { formatDuration } = require('../utils/time');
+const { isInvite, isLink, isExcessiveCaps } = require('../utils/patterns');
 
 const getAfk = db.prepare('SELECT * FROM afk WHERE user_id = ?');
 const deleteAfk = db.prepare('DELETE FROM afk WHERE user_id = ?');
@@ -21,9 +22,6 @@ const updateStickyMsg = db.prepare(
 const getLevelRoles = db.prepare('SELECT * FROM level_roles WHERE guild_id = ? AND level <= ?');
 const getTag = db.prepare('SELECT * FROM tags WHERE guild_id = ? AND name = ?');
 const bumpTag = db.prepare('UPDATE tags SET uses = uses + 1 WHERE guild_id = ? AND name = ?');
-
-const INVITE_RE = /(discord\.(gg|io|me|li)|discordapp\.com\/invite|discord\.com\/invite)\/\S+/i;
-const LINK_RE = /https?:\/\/\S+/i;
 
 module.exports = {
   name: Events.MessageCreate,
@@ -56,17 +54,15 @@ async function runAutomod(message, cfg) {
   const content = message.content;
   let reason = null;
 
-  if (cfg.automod_anti_invite && INVITE_RE.test(content)) reason = 'Discord invites are not allowed.';
-  else if (cfg.automod_anti_link && LINK_RE.test(content)) reason = 'Links are not allowed here.';
+  if (cfg.automod_anti_invite && isInvite(content)) reason = 'Discord invites are not allowed.';
+  else if (cfg.automod_anti_link && isLink(content)) reason = 'Links are not allowed here.';
   else if (
     cfg.automod_anti_mention &&
     message.mentions.users.size + message.mentions.roles.size > config.automod.mentionLimit
   ) {
     reason = 'Too many mentions.';
-  } else if (cfg.automod_anti_caps && content.length > 10) {
-    const letters = content.replace(/[^a-zA-Z]/g, '');
-    const caps = content.replace(/[^A-Z]/g, '');
-    if (letters.length > 8 && caps.length / letters.length > 0.7) reason = 'Excessive caps.';
+  } else if (cfg.automod_anti_caps && isExcessiveCaps(content)) {
+    reason = 'Excessive caps.';
   } else if (cfg.automod_badwords) {
     const words = getBadwords.all(message.guild.id).map((r) => r.word);
     const lower = content.toLowerCase();
