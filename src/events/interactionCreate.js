@@ -1,13 +1,14 @@
 'use strict';
 
 const { Events, Collection, MessageFlags, PermissionFlagsBits } = require('discord.js');
-const { db, getGuildConfig, trackCommand, isUserBlacklisted } = require('../database/db');
+const { db, getGuildConfig, trackCommand, isUserBlacklisted, getLevel } = require('../database/db');
 const Embed = require('../utils/embed');
 const logger = require('../utils/logger');
 const tickets = require('../services/tickets');
 const giveaways = require('../services/giveaways');
 const help = require('../services/help');
 const config = require('../../config.json');
+const { t } = require('../i18n');
 
 const isDisabled = db.prepare(
   'SELECT 1 FROM disabled_commands WHERE guild_id = ? AND command = ?'
@@ -44,9 +45,10 @@ async function handleCommand(interaction, client) {
   if (!command) return;
 
   // Globally blacklisted users cannot use commands (owners are exempt).
+  const gid = interaction.guild?.id;
   if (isUserBlacklisted(interaction.user.id) && !client.ownerIds.includes(interaction.user.id)) {
     return interaction.reply({
-      embeds: [Embed.error('You are blacklisted from using this bot.')],
+      embeds: [Embed.error(t(gid, 'error.blacklisted'))],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -58,7 +60,7 @@ async function handleCommand(interaction, client) {
     !client.ownerIds.includes(interaction.user.id)
   ) {
     return interaction.reply({
-      embeds: [Embed.error('This command is disabled on this server.')],
+      embeds: [Embed.error(t(gid, 'error.command_disabled'))],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -66,7 +68,7 @@ async function handleCommand(interaction, client) {
   // Guild-only guard.
   if (command.guildOnly && !interaction.guild) {
     return interaction.reply({
-      embeds: [Embed.error('This command can only be used in a server.')],
+      embeds: [Embed.error(t(gid, 'error.guild_only'))],
       flags: MessageFlags.Ephemeral,
     });
   }
@@ -76,7 +78,7 @@ async function handleCommand(interaction, client) {
     const missing = interaction.memberPermissions.missing(command.permissions);
     if (missing.length && !client.ownerIds.includes(interaction.user.id)) {
       return interaction.reply({
-        embeds: [Embed.error(`You need the following permission(s): \`${missing.join(', ')}\``)],
+        embeds: [Embed.error(t(gid, 'error.missing_perms', { perms: missing.join(', ') }))],
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -85,7 +87,7 @@ async function handleCommand(interaction, client) {
     const missing = interaction.guild.members.me.permissions.missing(command.botPermissions);
     if (missing.length) {
       return interaction.reply({
-        embeds: [Embed.error(`I need the following permission(s): \`${missing.join(', ')}\``)],
+        embeds: [Embed.error(t(gid, 'error.bot_missing_perms', { perms: missing.join(', ') }))],
         flags: MessageFlags.Ephemeral,
       });
     }
@@ -103,7 +105,7 @@ async function handleCommand(interaction, client) {
       const expires = timestamps.get(interaction.user.id) + cdAmount;
       if (now < expires) {
         return interaction.reply({
-          embeds: [Embed.warn(`Please wait <t:${Math.round(expires / 1000)}:R> before using \`/${command.data.name}\` again.`)],
+          embeds: [Embed.warn(t(gid, 'error.cooldown', { time: `<t:${Math.round(expires / 1000)}:R>`, command: command.data.name }))],
           flags: MessageFlags.Ephemeral,
         });
       }
@@ -118,7 +120,7 @@ async function handleCommand(interaction, client) {
   } catch (err) {
     logger.error(`Error in /${command.data.name}:`, err);
     const payload = {
-      embeds: [Embed.error('Something went wrong while running that command.')],
+      embeds: [Embed.error(t(gid, 'error.generic'))],
       flags: MessageFlags.Ephemeral,
     };
     interaction.replied || interaction.deferred
@@ -220,6 +222,15 @@ async function handleButton(interaction, client) {
         embeds: [Embed.error(`You need the <@&${g.required_role}> role to enter.`)],
         flags: MessageFlags.Ephemeral,
       });
+    }
+    if (g.required_level > 0) {
+      const lvl = getLevel(interaction.guild.id, interaction.user.id).level;
+      if (lvl < g.required_level) {
+        return interaction.reply({
+          embeds: [Embed.error(`You need to be **level ${g.required_level}+** to enter (you are level ${lvl}).`)],
+          flags: MessageFlags.Ephemeral,
+        });
+      }
     }
     const { entered, count } = giveaways.toggleEntry(interaction.message.id, interaction.user.id);
     await interaction.message

@@ -62,7 +62,8 @@ CREATE TABLE IF NOT EXISTS guild_config (
   antiraid_min_age_days INTEGER DEFAULT 0,
   antiraid_action     TEXT DEFAULT 'kick',
   antiraid_join_threshold INTEGER DEFAULT 0,
-  verify_role         TEXT
+  verify_role         TEXT,
+  locale              TEXT DEFAULT 'en'
 );
 
 CREATE TABLE IF NOT EXISTS levels (
@@ -178,7 +179,8 @@ CREATE TABLE IF NOT EXISTS giveaways (
   host_id     TEXT NOT NULL,
   end_at      INTEGER NOT NULL,
   ended       INTEGER DEFAULT 0,
-  required_role TEXT
+  required_role TEXT,
+  required_level INTEGER DEFAULT 0
 );
 
 CREATE TABLE IF NOT EXISTS giveaway_entries (
@@ -320,11 +322,17 @@ const MIGRATIONS = {
   antiraid_action: "TEXT DEFAULT 'kick'",
   antiraid_join_threshold: 'INTEGER DEFAULT 0',
   verify_role: 'TEXT',
+  locale: "TEXT DEFAULT 'en'",
 };
 for (const [col, def] of Object.entries(MIGRATIONS)) {
   if (!existingCols.has(col)) {
     db.exec(`ALTER TABLE guild_config ADD COLUMN ${col} ${def}`);
   }
+}
+// Column migrations for other tables.
+const giveawayCols = new Set(db.prepare('PRAGMA table_info(giveaways)').all().map((c) => c.name));
+if (!giveawayCols.has('required_level')) {
+  db.exec('ALTER TABLE giveaways ADD COLUMN required_level INTEGER DEFAULT 0');
 }
 
 /* ------------------------------------------------------------------ */

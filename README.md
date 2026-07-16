@@ -7,7 +7,7 @@ It bundles moderation, automod, economy, leveling, tickets, giveaways, reaction 
 and dozens of utility/fun commands — **with no AI dependencies and no external services**. All state is
 stored locally in an embedded SQLite database, so it runs anywhere Node.js does.
 
-> **92 slash commands** across **11 categories**, plus background message-driven systems.
+> **99 slash commands** across **11 categories**, plus background message-driven systems.
 
 ---
 
@@ -44,16 +44,20 @@ Server protection via `/antiraid` (or the dashboard):
 `inventory` · `slots` · `coinflip`
 
 ### 📈 Leveling
-`rank` (with progress bar) · `levels` (leaderboard) · `givexp` · `levelrole` (role rewards per level)
+`rank` (rendered **image card**, falls back to an embed) · `levels` (leaderboard) · `givexp` · `levelrole` (role rewards per level)
 - Configurable XP curve, anti-spam cooldown, level-up announcements & channel
+
+### 🌐 Localization (i18n)
+- Per-server language via `/language` (or the dashboard) — ships with **English** and **Russian**
+- Add a locale by dropping a JSON file in `src/i18n/locales/`; the framework interpolates `{vars}` and falls back to English
 
 ### 🎫 Tickets
 `/ticket setup` posts a panel with a button. Users open private ticket channels; staff can
-`claim`, `add`/`remove` members, and `close` (with transcripts logged).
+`claim`, `add`/`remove` members, and `close` — which generates a full **text transcript** sent to the ticket-log channel and DMed to the opener.
 
 ### 🎉 Giveaways
 `/giveaway start|end|reroll|list` — button-entry giveaways with multiple winners, role requirements,
-and automatic drawing when the timer expires.
+role **and level** requirements, and automatic drawing when the timer expires.
 
 ### 🎭 Roles
 `role add/remove` · `reactionrole create/add/remove/list` · `inrole` · per-server **autorole** on join

@@ -34,6 +34,7 @@ const logger = require('../utils/logger');
 const config = require('../../config.json');
 const { buildRows } = require('../services/buttonroles');
 const { parseDuration, formatDuration } = require('../utils/time');
+const i18n = require('../i18n');
 
 const MANAGE_GUILD = 0x20n;
 const DISCORD_API = 'https://discord.com/api/v10';
@@ -274,6 +275,7 @@ function start(client) {
       textChannels,
       roles,
       categories,
+      locales: i18n.available(),
       saved: req.query.saved === '1',
       csrf: newCsrf(req),
     });
@@ -285,8 +287,10 @@ function start(client) {
     if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token. Please reload and try again.' });
     const b = req.body;
 
+    const validLocale = i18n.available().some((l) => l.code === b.locale);
     setGuildConfig(guild.id, {
       prefix: (b.prefix || config.defaults.prefix).slice(0, 5),
+      locale: validLocale ? b.locale : i18n.DEFAULT,
       welcome_enabled: bool(b.welcome_enabled),
       welcome_channel: orNull(b.welcome_channel),
       welcome_message: b.welcome_message?.slice(0, 1500) || null,
