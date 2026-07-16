@@ -1,11 +1,13 @@
 # 🤖 Nexus — All-in-One Discord Bot
 
+[![CI](https://github.com/LonyLock/discord-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/LonyLock/discord-bot/actions/workflows/ci.yml)
+
 A **feature-packed, self-contained Discord bot** built with [discord.js v14](https://discord.js.org/).
 It bundles moderation, automod, economy, leveling, tickets, giveaways, reaction roles, music, logging,
 and dozens of utility/fun commands — **with no AI dependencies and no external services**. All state is
 stored locally in an embedded SQLite database, so it runs anywhere Node.js does.
 
-> **91 slash commands** across **11 categories**, plus background message-driven systems.
+> **92 slash commands** across **11 categories**, plus background message-driven systems.
 
 ---
 
