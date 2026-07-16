@@ -165,5 +165,22 @@
   "util.tag.saved": "Тег `{name}` сохранён. Используйте `/tag show {name}` или `{prefix}{name}`.",
   "util.tag.deleted": "Тег `{name}` удалён.",
   "util.timestamp.invalid": "Неверная длительность.",
-  "util.timestamp.title": "🕒 Генератор меток времени"
+  "util.timestamp.title": "🕒 Генератор меток времени",
+  "lvl.disabled": "Система уровней отключена на этом сервере.",
+  "lvl.rank.title": "Ранг {user}",
+  "lvl.rank.level": "Уровень",
+  "lvl.rank.rank": "Ранг",
+  "lvl.rank.total_xp": "Всего XP",
+  "lvl.rank.progress": "Прогресс — {xp} / {needed} XP",
+  "lvl.levels.title": "📈 Таблица уровней — {server}",
+  "lvl.no_data": "Пока нет данных.",
+  "lvl.givexp.added": "Начислено **{amount}** XP пользователю {user}.",
+  "lvl.givexp.removed": "Снято **{amount}** XP у {user}.",
+  "lvl.levelrole.too_high": "Эта роль выше моей; я не смог её назначить.",
+  "lvl.levelrole.set": "Участники теперь будут получать {role} на **уровне {level}**.",
+  "lvl.levelrole.removed": "Награда за уровень {level} удалена.",
+  "lvl.levelrole.not_set": "Для этого уровня нет награды.",
+  "lvl.levelrole.list_title": "🎖️ Награды за уровни",
+  "lvl.levelrole.list_entry": "Уровень **{level}** → <@&{role}>",
+  "lvl.levelrole.none": "Награды за уровни не настроены."
 }
