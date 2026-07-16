@@ -1,0 +1,54 @@
+<%- include('partials/header', { title: guild.name + ' — Scheduled' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🗓️ Schedule a Message</h2>
+  <p class="muted">The bot posts the message after the delay. Add a repeat interval to make it recurring (min 10 minutes).</p>
+  <form method="POST" action="/servers/<%= guild.id %>/scheduled" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <div class="field"><label>Channel</label>
+      <select name="channel" class="input" required>
+        <% textChannels.forEach((c) => { %><option value="<%= c.id %>">#<%= c.name %></option><% }) %>
+      </select>
+    </div>
+    <div class="field"><label>Message</label><textarea class="input" name="message" rows="2" maxlength="2000" placeholder="📢 Weekly reminder: read the rules!" required></textarea></div>
+    <div class="field-row">
+      <div class="field"><label>First send after <small class="muted">(e.g. 1h, 1d)</small></label><input class="input input-short" name="delay" placeholder="1d" required /></div>
+      <div class="field"><label>Repeat every <small class="muted">(optional, e.g. 1w)</small></label><input class="input input-short" name="repeat" placeholder="none" /></div>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Schedule</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Scheduled <span class="badge"><%= scheduled.length %></span></h2>
+  <% if (!scheduled.length) { %>
+    <p class="muted">Nothing scheduled.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Channel</th><th>Message</th><th>Next</th><th>Repeat</th><th></th></tr></thead>
+      <tbody>
+        <% scheduled.forEach((s) => { %>
+          <tr>
+            <td><%= s.id %></td>
+            <td>#<%= s.channelName %></td>
+            <td class="truncate-cell"><%= s.content %></td>
+            <td><span title="<%= new Date(s.next_run).toISOString() %>"><%= new Date(s.next_run).toUTCString().replace('GMT','UTC') %></span></td>
+            <td><%= s.repeat || '—' %></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/scheduled">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="sched_id" value="<%= s.id %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>
