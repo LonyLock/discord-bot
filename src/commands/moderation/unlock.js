@@ -1,6 +1,7 @@
 'use strict';
 const { SlashCommandBuilder, PermissionFlagsBits } = require('discord.js');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'moderation',
@@ -12,7 +13,8 @@ module.exports = {
     .setDescription('Unlock this channel (allow @everyone to send messages)')
     .setDefaultMemberPermissions(PermissionFlagsBits.ManageChannels),
   async execute(interaction) {
+    const gid = interaction.guild.id;
     await interaction.channel.permissionOverwrites.edit(interaction.guild.roles.everyone, { SendMessages: null });
-    return interaction.reply({ embeds: [Embed.success('🔓 This channel has been unlocked.')] });
+    return interaction.reply({ embeds: [Embed.success(t(gid, 'mod.unlock.success'))] });
   },
 };

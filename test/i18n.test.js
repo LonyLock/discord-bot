@@ -31,3 +31,14 @@ test('available() lists locales with display names', () => {
   assert.ok(codes.includes('ru'));
   assert.ok(available().every((l) => typeof l.name === 'string' && l.name.length));
 });
+
+test('every locale has the same keys as English (parity)', () => {
+  const en = require('../src/i18n/locales/en.json');
+  const enKeys = Object.keys(en);
+  for (const { code } of available()) {
+    if (code === 'en') continue;
+    const other = require(`../src/i18n/locales/${code}.json`);
+    const missing = enKeys.filter((k) => !(k in other));
+    assert.strictEqual(missing.length, 0, `${code} is missing keys: ${missing.join(', ')}`);
+  }
+});
