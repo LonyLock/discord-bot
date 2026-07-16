@@ -53,7 +53,7 @@ module.exports = {
         const embed = new EmbedBuilder()
           .setColor(config.brand.successColor)
           .setAuthor({ name: member.user.tag, iconURL: member.user.displayAvatarURL() })
-          .setDescription(`📥 ${member} joined.`)
+          .setDescription(`📥 **${member.user.tag}** joined.`)
           .addFields({
             name: 'Account created',
             value: `<t:${Math.floor(member.user.createdTimestamp / 1000)}:R>`,
