@@ -196,6 +196,10 @@ select.input-multi option:checked { background: var(--primary) linear-gradient(0
 .inline-form { display: flex; gap: 10px; margin-top: 12px; }
 .inline-form .input { flex: 1; }
 
+/* Callout row (pointer to a dedicated page) */
+.callout { display: flex; align-items: center; justify-content: space-between; gap: 14px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; flex-wrap: wrap; }
+.callout span { font-size: .92rem; }
+
 /* Data tables */
 .data-table { width: 100%; border-collapse: collapse; }
 .data-table th, .data-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }

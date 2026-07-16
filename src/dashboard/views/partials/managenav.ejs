@@ -8,6 +8,7 @@
 
 <nav class="subnav">
   <a href="/servers/<%= guild.id %>" class="<%= active === 'settings' ? 'active' : '' %>">⚙️ Settings</a>
+  <a href="/servers/<%= guild.id %>/logignore" class="<%= active === 'logignore' ? 'active' : '' %>">🙈 Ignore Logs</a>
   <a href="/servers/<%= guild.id %>/autoresponders" class="<%= active === 'autoresponders' ? 'active' : '' %>">💬 Auto-Responders</a>
   <a href="/servers/<%= guild.id %>/badwords" class="<%= active === 'badwords' ? 'active' : '' %>">🚫 Bad Words</a>
   <a href="/servers/<%= guild.id %>/levelroles" class="<%= active === 'levelroles' ? 'active' : '' %>">🎖️ Level Roles</a>

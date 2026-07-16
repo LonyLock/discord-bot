@@ -1,0 +1,42 @@
+<%- include('partials/header', { title: guild.name + ' — Ignore Logs' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🙈 Exclude a Channel From Logging</h2>
+  <p class="muted">Messages in ignored channels won't appear in the message edit/delete log. Selecting a <strong>category</strong> ignores every channel inside it. Logs never ping members.</p>
+  <form method="POST" action="/servers/<%= guild.id %>/logignore" class="inline-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <select name="channel" class="input" required>
+      <option value="none" disabled selected>Choose a channel or category…</option>
+      <optgroup label="Channels">
+        <% textChannels.forEach((c) => { %><option value="<%= c.id %>">#<%= c.name %></option><% }) %>
+      </optgroup>
+      <optgroup label="Categories">
+        <% categories.forEach((c) => { %><option value="<%= c.id %>">📁 <%= c.name %></option><% }) %>
+      </optgroup>
+    </select>
+    <button type="submit" class="btn btn-primary">Add</button>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Ignored <span class="badge"><%= ignored.length %></span></h2>
+  <% if (!ignored.length) { %>
+    <p class="muted">No channels ignored — logging works everywhere.</p>
+  <% } else { %>
+    <div class="chip-list">
+      <% ignored.forEach((c) => { %>
+        <form method="POST" action="/servers/<%= guild.id %>/logignore" class="chip">
+          <input type="hidden" name="_csrf" value="<%= csrf %>" />
+          <input type="hidden" name="_action" value="remove" />
+          <input type="hidden" name="channel" value="<%= c.id %>" />
+          <span><%= c.name %></span>
+          <button type="submit" class="chip-x" title="Remove">✕</button>
+        </form>
+      <% }) %>
+    </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

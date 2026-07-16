@@ -262,7 +262,6 @@ function start(client) {
       textChannels,
       roles,
       categories,
-      logIgnored: listIgnoredLogChannels(guild.id),
       saved: req.query.saved === '1',
       csrf: newCsrf(req),
     });
@@ -307,14 +306,40 @@ function start(client) {
       automod_badwords: bool(b.automod_badwords),
     });
 
-    // Sync log-ignore list from the multi-select.
-    const desired = new Set([].concat(b.log_ignored || []).filter((v) => v && v !== 'none'));
-    const current = new Set(listIgnoredLogChannels(guild.id));
-    for (const id of current) if (!desired.has(id)) unignoreLogChannel(guild.id, id);
-    for (const id of desired) if (!current.has(id)) ignoreLogChannel(guild.id, id);
+    // Note: the log-ignore list is managed on its own /logignore page so that
+    // saving this form never accidentally clears it.
 
     logger.info(`Dashboard: ${req.session.user.username} updated settings for guild ${guild.id}`);
     res.redirect(`/servers/${guild.id}?saved=1`);
+  });
+
+  /* ----- Log ignore list ----- */
+  app.get('/servers/:id/logignore', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const { textChannels, categories } = guildLists(guild);
+    const nameOf = (id) => {
+      const c = guild.channels.cache.get(id);
+      if (!c) return `Unknown (${id})`;
+      return c.type === 4 ? `📁 ${c.name}` : `#${c.name}`;
+    };
+    res.render('logignore', {
+      active: 'logignore',
+      guild: guildMeta(guild),
+      textChannels,
+      categories,
+      ignored: listIgnoredLogChannels(guild.id).map((id) => ({ id, name: nameOf(id) })),
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/logignore', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const { _action, channel } = req.body;
+    if (_action === 'add' && channel && channel !== 'none') ignoreLogChannel(guild.id, channel);
+    else if (_action === 'remove' && channel) unignoreLogChannel(guild.id, channel);
+    res.redirect(`/servers/${guild.id}/logignore`);
   });
 
   /* ----- Bad-words filter ----- */
