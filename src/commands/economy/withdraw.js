@@ -4,6 +4,7 @@ const { getBalance, updateBalance } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
 const { formatNumber } = require('../../utils/helpers');
+const { t } = require('../../i18n');
 
 module.exports = {
   category: 'economy',
@@ -13,12 +14,13 @@ module.exports = {
     .setDescription('Withdraw coins from your bank')
     .addStringOption((o) => o.setName('amount').setDescription('Amount or "all"').setRequired(true)),
   async execute(interaction) {
-    const bal = getBalance(interaction.guild.id, interaction.user.id, config.economy.startingBalance);
+    const gid = interaction.guild.id;
+    const bal = getBalance(gid, interaction.user.id, config.economy.startingBalance);
     const input = interaction.options.getString('amount').toLowerCase();
     let amount = input === 'all' || input === 'max' ? bal.bank : parseInt(input.replace(/[^0-9]/g, ''), 10);
-    if (!amount || amount <= 0) return interaction.reply({ embeds: [Embed.error('Enter a valid amount.')], ephemeral: true });
-    if (amount > bal.bank) return interaction.reply({ embeds: [Embed.error('You do not have that much in your bank.')], ephemeral: true });
-    updateBalance(interaction.guild.id, interaction.user.id, { wallet: bal.wallet + amount, bank: bal.bank - amount });
-    return interaction.reply({ embeds: [Embed.success(`Withdrew **${config.economy.currencySymbol} ${formatNumber(amount)}** from your bank.`)] });
+    if (!amount || amount <= 0) return interaction.reply({ embeds: [Embed.error(t(gid, 'econ.invalid_amount'))], ephemeral: true });
+    if (amount > bal.bank) return interaction.reply({ embeds: [Embed.error(t(gid, 'econ.not_enough_bank'))], ephemeral: true });
+    updateBalance(gid, interaction.user.id, { wallet: bal.wallet + amount, bank: bal.bank - amount });
+    return interaction.reply({ embeds: [Embed.success(t(gid, 'econ.withdraw.success', { sym: config.economy.currencySymbol, amount: formatNumber(amount) }))] });
   },
 };
