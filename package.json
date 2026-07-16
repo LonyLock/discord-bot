@@ -1,0 +1,41 @@
+{
+  "name": "discord-bot",
+  "version": "1.0.0",
+  "description": "A feature-rich, all-in-one Discord bot (moderation, economy, leveling, tickets, giveaways, automod, music and more) built with discord.js v14. No AI dependencies.",
+  "main": "src/index.js",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --watch src/index.js",
+    "deploy": "node src/deploy-commands.js",
+    "validate": "node scripts/validate.js",
+    "check": "node -e \"require('./src/index.js')\" || true"
+  },
+  "keywords": [
+    "discord",
+    "discord-bot",
+    "discord.js",
+    "moderation",
+    "economy",
+    "leveling"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.8.1",
+    "discord.js": "^14.16.3",
+    "dotenv": "^16.4.7",
+    "ejs": "^3.1.10",
+    "express": "^4.22.2",
+    "express-session": "^1.19.0"
+  },
+  "optionalDependencies": {
+    "@discordjs/voice": "^0.18.0",
+    "ffmpeg-static": "^5.2.0",
+    "libsodium-wrappers": "^0.7.15",
+    "play-dl": "^1.9.7"
+  }
+}

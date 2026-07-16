@@ -1,0 +1,53 @@
+<%- include('partials/header', { title: guild.name + ' — Auto-Responders' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>💬 Add Auto-Responder</h2>
+  <p class="muted">When a message matches the trigger, the bot replies with the response.</p>
+  <form method="POST" action="/servers/<%= guild.id %>/autoresponders" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Trigger</label><input class="input" name="trigger" placeholder="hello" maxlength="100" required /></div>
+      <div class="field"><label>Match</label>
+        <select name="match" class="input">
+          <option value="contains">Contains</option>
+          <option value="exact">Exact</option>
+          <option value="startswith">Starts with</option>
+        </select>
+      </div>
+    </div>
+    <div class="field"><label>Response</label><textarea class="input" name="response" rows="2" placeholder="Hi there! 👋" maxlength="1500" required></textarea></div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Add Responder</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Responders <span class="badge"><%= responders.length %></span></h2>
+  <% if (!responders.length) { %>
+    <p class="muted">No auto-responders yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Trigger</th><th>Match</th><th>Response</th><th></th></tr></thead>
+      <tbody>
+        <% responders.forEach((r) => { %>
+          <tr>
+            <td><code><%= r.trigger %></code></td>
+            <td><span class="tag-pill"><%= r.match_mode %></span></td>
+            <td class="truncate-cell"><%= r.response %></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/autoresponders">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="trigger" value="<%= r.trigger %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

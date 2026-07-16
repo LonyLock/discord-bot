@@ -1,0 +1,47 @@
+<%- include('partials/header', { title: 'Owner Panel' }) %>
+<%- include('partials/ownernav', { active }) %>
+
+<%
+  function fmtUptime(ms) {
+    const d = Math.floor(ms / 864e5), h = Math.floor(ms / 36e5) % 24, m = Math.floor(ms / 6e4) % 60;
+    return [d && d + 'd', h && h + 'h', m + 'm'].filter(Boolean).join(' ');
+  }
+%>
+
+<div class="stats-row">
+  <div class="stat-card"><span class="stat-num"><%= stats.guilds.toLocaleString() %></span><span class="stat-label">Servers</span></div>
+  <div class="stat-card"><span class="stat-num"><%= stats.users.toLocaleString() %></span><span class="stat-label">Users</span></div>
+  <div class="stat-card"><span class="stat-num"><%= stats.totalUses.toLocaleString() %></span><span class="stat-label">Commands Run</span></div>
+</div>
+
+<div class="lb-grid">
+  <div class="card">
+    <h2>🖥️ Runtime</h2>
+    <table class="data-table">
+      <tbody>
+        <tr><td>Uptime</td><td><%= fmtUptime(stats.uptime) %></td></tr>
+        <tr><td>WebSocket ping</td><td><%= stats.ping %> ms</td></tr>
+        <tr><td>Memory (heap)</td><td><%= stats.memory %> MB</td></tr>
+        <tr><td>Loaded commands</td><td><%= stats.commands %></td></tr>
+        <tr><td>Node.js</td><td><%= stats.node %></td></tr>
+        <tr><td>Blacklisted users</td><td><%= blacklistedUsers %></td></tr>
+        <tr><td>Blacklisted servers</td><td><%= blacklistedGuilds %></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="card">
+    <h2>📊 Top Commands</h2>
+    <% if (!topCommands.length) { %>
+      <p class="muted">No command usage recorded yet.</p>
+    <% } else { %>
+      <ol class="lb-list">
+        <% topCommands.forEach((c, i) => { %>
+          <li><span class="lb-rank">#<%= i + 1 %></span><span class="lb-name">/<%= c.command %></span><span class="lb-val"><%= c.uses.toLocaleString() %> uses</span></li>
+        <% }) %>
+      </ol>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

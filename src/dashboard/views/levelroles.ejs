@@ -1,0 +1,49 @@
+<%- include('partials/header', { title: guild.name + ' — Level Roles' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🎖️ Add Level Reward</h2>
+  <p class="muted">Members automatically receive the role when they reach the level. Make sure the bot's role is <strong>above</strong> the reward role.</p>
+  <form method="POST" action="/servers/<%= guild.id %>/levelroles" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <div class="field-row">
+      <div class="field"><label>Level</label><input class="input input-short" type="number" name="level" min="1" max="1000" placeholder="10" required /></div>
+      <div class="field" style="flex:1"><label>Role</label>
+        <select name="role" class="input" required>
+          <% roles.forEach((r) => { %><option value="<%= r.id %>">@<%= r.name %></option><% }) %>
+        </select>
+      </div>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Add Reward</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Rewards <span class="badge"><%= levelRoles.length %></span></h2>
+  <% if (!levelRoles.length) { %>
+    <p class="muted">No level rewards configured.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Level</th><th>Role</th><th></th></tr></thead>
+      <tbody>
+        <% levelRoles.forEach((lr) => { %>
+          <tr>
+            <td><strong><%= lr.level %></strong></td>
+            <td><%= (roles.find((r) => r.id === lr.role_id) || {}).name ? '@' + roles.find((r) => r.id === lr.role_id).name : lr.role_id %></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/levelroles">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="level" value="<%= lr.level %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

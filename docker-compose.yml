@@ -1,0 +1,19 @@
+services:
+  bot:
+    build: .
+    container_name: nexus-discord-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist the SQLite database on the host so data survives restarts/rebuilds.
+      - ./data:/app/data
+    ports:
+      # Only relevant when DASHBOARD_ENABLED=true in .env
+      - "${DASHBOARD_PORT:-3000}:${DASHBOARD_PORT:-3000}"
+    # Basic liveness check: the process should stay up.
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3

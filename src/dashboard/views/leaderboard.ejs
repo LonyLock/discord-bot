@@ -1,0 +1,29 @@
+<%- include('partials/header', { title: guild.name + ' Leaderboards' }) %>
+
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="lb-grid">
+  <div class="card">
+    <h2>📈 Top Levels</h2>
+    <% if (!levels.length) { %><p class="muted">No data yet.</p><% } else { %>
+      <ol class="lb-list">
+        <% levels.forEach((l, i) => { %>
+          <li><span class="lb-rank">#<%= i + 1 %></span><span class="lb-name"><%= l.name %></span><span class="lb-val">Lvl <%= l.level %> &middot; <%= l.total_xp.toLocaleString() %> XP</span></li>
+        <% }) %>
+      </ol>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2>🪙 Richest</h2>
+    <% if (!economy.length) { %><p class="muted">No data yet.</p><% } else { %>
+      <ol class="lb-list">
+        <% economy.forEach((e, i) => { %>
+          <li><span class="lb-rank">#<%= i + 1 %></span><span class="lb-name"><%= e.name %></span><span class="lb-val"><%= currency %> <%= e.total.toLocaleString() %></span></li>
+        <% }) %>
+      </ol>
+    <% } %>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

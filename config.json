@@ -1,0 +1,39 @@
+{
+  "brand": {
+    "name": "Nexus",
+    "color": "#5865F2",
+    "successColor": "#57F287",
+    "errorColor": "#ED4245",
+    "warnColor": "#FEE75C",
+    "footer": "Nexus • All-in-one Discord Bot"
+  },
+  "defaults": {
+    "prefix": "!",
+    "language": "en"
+  },
+  "leveling": {
+    "xpPerMessageMin": 15,
+    "xpPerMessageMax": 25,
+    "xpCooldownSeconds": 60,
+    "baseXp": 100,
+    "growthFactor": 1.5
+  },
+  "economy": {
+    "currencySymbol": "🪙",
+    "currencyName": "coins",
+    "startingBalance": 100,
+    "dailyAmount": 250,
+    "weeklyAmount": 1000,
+    "workMin": 50,
+    "workMax": 250,
+    "robSuccessRate": 0.45,
+    "maxBankDefault": 100000
+  },
+  "automod": {
+    "spamMessageThreshold": 5,
+    "spamIntervalSeconds": 5,
+    "mentionLimit": 5,
+    "duplicateThreshold": 3
+  },
+  "cooldownDefaultSeconds": 3
+}

@@ -1,0 +1,9 @@
+<%- include('partials/header', { title: 'Error ' + code }) %>
+
+<div class="empty empty-lg">
+  <h1><%= code %></h1>
+  <p class="muted"><%= message %></p>
+  <a href="/" class="btn btn-primary">Go Home</a>
+</div>
+
+<%- include('partials/footer') %>
