@@ -1,0 +1,14 @@
+{
+  "__name__": "Русский",
+  "error.command_disabled": "Эта команда отключена на этом сервере.",
+  "error.guild_only": "Эту команду можно использовать только на сервере.",
+  "error.missing_perms": "Вам нужны следующие права: `{perms}`",
+  "error.bot_missing_perms": "Мне нужны следующие права: `{perms}`",
+  "error.cooldown": "Подождите {time}, прежде чем снова использовать `/{command}`.",
+  "error.blacklisted": "Вам запрещено использовать этого бота.",
+  "error.generic": "Произошла ошибка при выполнении команды.",
+  "ping.pinging": "🏓 Пингую...",
+  "ping.pong": "**Задержка:** {rtt}мс\n**WebSocket:** {ws}мс",
+  "language.set": "Язык сервера установлен: **{lang}**.",
+  "language.current": "Текущий язык сервера: **{lang}**.\nДоступно: {list}"
+}

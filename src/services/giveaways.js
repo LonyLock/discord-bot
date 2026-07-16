@@ -6,8 +6,8 @@ const config = require('../../config.json');
 const { relative } = require('../utils/time');
 
 const insertGiveaway = db.prepare(`
-  INSERT INTO giveaways (message_id, channel_id, guild_id, prize, winners, host_id, end_at, required_role)
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  INSERT INTO giveaways (message_id, channel_id, guild_id, prize, winners, host_id, end_at, required_role, required_level)
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
 `);
 const getGiveaway = db.prepare('SELECT * FROM giveaways WHERE message_id = ?');
 const markEnded = db.prepare('UPDATE giveaways SET ended = 1 WHERE message_id = ?');
@@ -43,7 +43,7 @@ function buildEmbed(g, entryCount, ended = false, winners = []) {
     embed.setDescription(
       `Click 🎉 below to enter!\n\n**Ends:** ${relative(g.end_at)}\n**Entries:** ${entryCount}\n**Host:** <@${g.host_id}>${
         g.required_role ? `\n**Required role:** <@&${g.required_role}>` : ''
-      }`
+      }${g.required_level ? `\n**Required level:** ${g.required_level}+` : ''}`
     );
   }
   return embed;
@@ -60,15 +60,15 @@ function buttonRow(entryCount, disabled = false) {
   );
 }
 
-async function startGiveaway(channel, { prize, winners, durationMs, hostId, requiredRole }) {
+async function startGiveaway(channel, { prize, winners, durationMs, hostId, requiredRole, requiredLevel = 0 }) {
   const endAt = Date.now() + durationMs;
-  const placeholder = { prize, winners, host_id: hostId, end_at: endAt, required_role: requiredRole };
+  const placeholder = { prize, winners, host_id: hostId, end_at: endAt, required_role: requiredRole, required_level: requiredLevel };
   const message = await channel.send({
     embeds: [buildEmbed(placeholder, 0)],
     components: [buttonRow(0)],
   });
   insertGiveaway.run(
-    message.id, channel.id, channel.guild.id, prize, winners, hostId, endAt, requiredRole || null
+    message.id, channel.id, channel.guild.id, prize, winners, hostId, endAt, requiredRole || null, requiredLevel || 0
   );
   return message;
 }

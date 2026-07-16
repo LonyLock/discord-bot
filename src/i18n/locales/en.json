@@ -1,0 +1,14 @@
+{
+  "__name__": "English",
+  "error.command_disabled": "This command is disabled on this server.",
+  "error.guild_only": "This command can only be used in a server.",
+  "error.missing_perms": "You need the following permission(s): `{perms}`",
+  "error.bot_missing_perms": "I need the following permission(s): `{perms}`",
+  "error.cooldown": "Please wait {time} before using `/{command}` again.",
+  "error.blacklisted": "You are blacklisted from using this bot.",
+  "error.generic": "Something went wrong while running that command.",
+  "ping.pinging": "🏓 Pinging...",
+  "ping.pong": "**Roundtrip:** {rtt}ms\n**WebSocket:** {ws}ms",
+  "language.set": "Server language set to **{lang}**.",
+  "language.current": "Current server language: **{lang}**.\nAvailable: {list}"
+}

@@ -37,6 +37,14 @@
       <input class="input input-short" type="text" name="prefix" maxlength="5" value="<%= cfg.prefix || '!' %>" />
       <small class="muted">Used for legacy text commands &amp; custom tags. Slash commands always work.</small>
     </div>
+    <div class="field">
+      <label>🌐 Language</label>
+      <select name="locale" class="input input-short">
+        <% locales.forEach((l) => { %>
+          <option value="<%= l.code %>" <%= (cfg.locale || 'en') === l.code ? 'selected' : '' %>><%= l.name %></option>
+        <% }) %>
+      </select>
+    </div>
   </div>
 
   <div class="card">

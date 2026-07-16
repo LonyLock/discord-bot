@@ -20,7 +20,8 @@ module.exports = {
       .addStringOption((o) => o.setName('prize').setDescription('What is being given away').setRequired(true))
       .addStringOption((o) => o.setName('duration').setDescription('e.g. 1h, 1d').setRequired(true))
       .addIntegerOption((o) => o.setName('winners').setDescription('Number of winners (default 1)').setMinValue(1).setMaxValue(20))
-      .addRoleOption((o) => o.setName('required_role').setDescription('Role required to enter')))
+      .addRoleOption((o) => o.setName('required_role').setDescription('Role required to enter'))
+      .addIntegerOption((o) => o.setName('required_level').setDescription('Minimum level required to enter').setMinValue(1)))
     .addSubcommand((s) => s.setName('end').setDescription('End a giveaway now')
       .addStringOption((o) => o.setName('message_id').setDescription('Giveaway message ID').setRequired(true)))
     .addSubcommand((s) => s.setName('reroll').setDescription('Reroll a finished giveaway')
@@ -35,7 +36,8 @@ module.exports = {
       if (!ms || ms < 10000 || ms > 2592000000) return interaction.reply({ embeds: [Embed.error('Duration must be between 10s and 30d.')], ephemeral: true });
       const winners = interaction.options.getInteger('winners') || 1;
       const requiredRole = interaction.options.getRole('required_role');
-      const msg = await giveaways.startGiveaway(interaction.channel, { prize, winners, durationMs: ms, hostId: interaction.user.id, requiredRole: requiredRole?.id });
+      const requiredLevel = interaction.options.getInteger('required_level') || 0;
+      const msg = await giveaways.startGiveaway(interaction.channel, { prize, winners, durationMs: ms, hostId: interaction.user.id, requiredRole: requiredRole?.id, requiredLevel });
       return interaction.reply({ embeds: [Embed.success(`Giveaway for **${prize}** started! Ends ${relative(Date.now() + ms)} (in ${formatDuration(ms)}). [Jump](${msg.url})`)], ephemeral: true });
     }
 

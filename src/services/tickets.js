@@ -7,9 +7,48 @@ const {
   ButtonBuilder,
   ButtonStyle,
   EmbedBuilder,
+  AttachmentBuilder,
 } = require('discord.js');
 const { db, getGuildConfig } = require('../database/db');
 const config = require('../../config.json');
+
+/**
+ * Build a plain-text transcript of a ticket channel (oldest → newest),
+ * paging back through up to ~1000 messages.
+ */
+async function buildTranscript(channel, ticket) {
+  const collected = [];
+  let before;
+  for (let i = 0; i < 10; i++) {
+    const batch = await channel.messages.fetch({ limit: 100, before }).catch(() => null);
+    if (!batch || batch.size === 0) break;
+    collected.push(...batch.values());
+    before = batch.last().id;
+    if (batch.size < 100) break;
+  }
+  collected.sort((a, b) => a.createdTimestamp - b.createdTimestamp);
+
+  const header = [
+    `Ticket #${ticket.number}`,
+    `Server: ${channel.guild.name} (${channel.guild.id})`,
+    `Opened by: ${ticket.user_id}`,
+    `Subject: ${ticket.subject || 'N/A'}`,
+    `Messages: ${collected.length}`,
+    '='.repeat(50),
+    '',
+  ].join('\n');
+
+  const lines = collected.map((m) => {
+    const time = new Date(m.createdTimestamp).toISOString().replace('T', ' ').slice(0, 19);
+    const author = m.author ? `${m.author.tag}` : 'Unknown';
+    let content = m.content || '';
+    if (m.attachments.size) content += ` [attachments: ${[...m.attachments.values()].map((a) => a.url).join(', ')}]`;
+    if (m.embeds.length && !content) content = '[embed]';
+    return `[${time}] ${author}: ${content}`;
+  });
+
+  return header + lines.join('\n');
+}
 
 const insertTicket = db.prepare(`
   INSERT INTO tickets (channel_id, guild_id, user_id, subject, status, created_at, number)
@@ -133,6 +172,13 @@ async function closeTicket(channel, closedBy) {
 
   closeTicketRow.run(channel.id);
 
+  // Generate a transcript before the channel is deleted.
+  let transcript = null;
+  try {
+    transcript = await buildTranscript(channel, ticket);
+  } catch { /* transcript is best-effort */ }
+  const fileName = `transcript-ticket-${ticket.number}.txt`;
+
   const cfg = getGuildConfig(channel.guild.id);
   if (cfg.ticket_log_channel) {
     const logChannel = channel.guild.channels.cache.get(cfg.ticket_log_channel);
@@ -147,7 +193,19 @@ async function closeTicket(channel, closedBy) {
         )
         .setFooter({ text: config.brand.footer })
         .setTimestamp();
-      logChannel.send({ embeds: [embed], allowedMentions: { parse: [] } }).catch(() => {});
+      const files = transcript ? [new AttachmentBuilder(Buffer.from(transcript, 'utf8'), { name: fileName })] : [];
+      logChannel.send({ embeds: [embed], files, allowedMentions: { parse: [] } }).catch(() => {});
+    }
+  }
+
+  // DM the opener a copy of the transcript.
+  if (transcript) {
+    const opener = await channel.client.users.fetch(ticket.user_id).catch(() => null);
+    if (opener) {
+      opener.send({
+        content: `Here is the transcript of your ticket **#${ticket.number}** from **${channel.guild.name}**.`,
+        files: [new AttachmentBuilder(Buffer.from(transcript, 'utf8'), { name: fileName })],
+      }).catch(() => {});
     }
   }
 
