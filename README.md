@@ -57,6 +57,8 @@ and automatic drawing when the timer expires.
 
 ### 🎭 Roles
 `role add/remove` · `reactionrole create/add/remove/list` · `inrole` · per-server **autorole** on join
+- **Button roles** (`/buttonrole`) — modern self-assignable roles via buttons (up to 25 per message), managed from the dashboard too
+- **Verification** (`/verify`) — a one-click button gate that grants a "verified" role to new members
 
 ### 🎵 Music
 `play` (YouTube search or URL) · `skip` · `stop` · `queue` · `nowplaying` · `pause` · `loop` · `volume`
