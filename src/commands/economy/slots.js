@@ -33,10 +33,8 @@ module.exports = {
   guildOnly: true,
   data: new SlashCommandBuilder()
     .setName('slots')
-    .setDescription('Spin the slot machine — pick your bet and grid')
-    .addIntegerOption((o) => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(10))
-    .addStringOption((o) => o.setName('mode').setDescription('Grid size to spin')
-      .addChoices({ name: '3×3 (steady)', value: '3x3' }, { name: '5×3 (high roller)', value: '5x3' })),
+    .setDescription('Spin the 5×3 slot machine')
+    .addIntegerOption((o) => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(10)),
   async execute(interaction) {
     const gid = interaction.guild.id;
     const userId = interaction.user.id;
@@ -44,7 +42,7 @@ module.exports = {
     if (!cfg.economy_enabled) return interaction.reply({ embeds: [Embed.error(t(gid, 'econ.disabled'))], ephemeral: true });
 
     const bet = interaction.options.getInteger('bet');
-    const mode = MODES[interaction.options.getString('mode')] ? interaction.options.getString('mode') : '3x3';
+    const mode = '5x3';
     const bal = getBalance(gid, userId, config.economy.startingBalance);
     if (bet > bal.wallet) return interaction.reply({ embeds: [Embed.error(t(gid, 'econ.not_enough_coins'))], ephemeral: true });
 

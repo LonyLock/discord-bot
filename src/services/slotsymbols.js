@@ -84,6 +84,24 @@ function lemon(ctx, cx, cy, s) {
   ctx.restore();
 }
 
+function orange(ctx, cx, cy, s) {
+  ball(ctx, cx, cy + s * 0.05, s * 0.82, '#ffd486', '#ff951c', '#b85e00');
+  // Dimpled navel + pore texture.
+  ctx.fillStyle = 'rgba(150,70,0,0.5)';
+  ctx.beginPath();
+  ctx.arc(cx, cy - s * 0.55, s * 0.09, 0, Math.PI * 2);
+  ctx.fill();
+  // Leaf.
+  ctx.save();
+  ctx.translate(cx + s * 0.28, cy - s * 0.7);
+  ctx.rotate(0.5);
+  ctx.beginPath();
+  ctx.ellipse(0, 0, s * 0.32, s * 0.15, 0, 0, Math.PI * 2);
+  ctx.fillStyle = '#4faa3c';
+  ctx.fill();
+  ctx.restore();
+}
+
 function grape(ctx, cx, cy, s) {
   // Stem + leaf.
   ctx.strokeStyle = '#6b4a2b';
@@ -223,6 +241,7 @@ function seven(ctx, cx, cy, s) {
 const DRAW = {
   '🍒': cherry,
   '🍋': lemon,
+  '🍊': orange,
   '🍇': grape,
   '🔔': bell,
   '💎': diamond,

@@ -19,7 +19,8 @@
 const STRIP = [
   ...Array(9).fill('🍒'),
   ...Array(8).fill('🍋'),
-  ...Array(6).fill('🍇'),
+  ...Array(6).fill('🍊'),
+  ...Array(5).fill('🍇'),
   ...Array(4).fill('🔔'),
   ...Array(2).fill('💎'),
   ...Array(1).fill('7️⃣'),
@@ -29,6 +30,7 @@ const STRIP = [
 const VALUE = {
   '🍒': 2,
   '🍋': 3,
+  '🍊': 4,
   '🍇': 6,
   '🔔': 10,
   '💎': 25,
@@ -39,12 +41,10 @@ const VALUE = {
 const LENGTH_BONUS = { 3: 1, 4: 4, 5: 12 };
 
 const ROWS = 3;
-// `payoutScale` normalises each grid to a comparable ~90% RTP (house edge ~10%):
-// the wider 5×3 grid pays far more on raw 4-/5-of-a-kind hits, so it is scaled down,
-// while the tighter 3×3 is nudged up. Tuned by Monte-Carlo (see test/slots.test.js).
+// `payoutScale` normalises the grid to ~90% RTP (house edge ~10%). Tuned by
+// Monte-Carlo (see test/slots.test.js).
 const MODES = {
-  '3x3': { cols: 3, payoutScale: 0.70 },
-  '5x3': { cols: 5, payoutScale: 0.31 },
+  '5x3': { cols: 5, payoutScale: 0.59 },
 };
 
 /** Build the payline coordinate sets for a given column count. */
