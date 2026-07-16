@@ -106,6 +106,34 @@ function evaluate(grid) {
 }
 
 /**
+ * Coordinates of every cell that forms part of a winning line, de-duplicated.
+ * Used by the GIF renderer to highlight the win. Returns an array of [row, col].
+ */
+function winningCells(grid) {
+  const cols = grid[0].length;
+  const seen = new Set();
+  const cells = [];
+  for (const line of paylines(cols)) {
+    const first = grid[line[0][0]][line[0][1]];
+    let count = 1;
+    for (let i = 1; i < line.length; i++) {
+      if (grid[line[i][0]][line[i][1]] === first) count++;
+      else break;
+    }
+    if (count >= 3) {
+      for (let i = 0; i < count; i++) {
+        const key = `${line[i][0]},${line[i][1]}`;
+        if (!seen.has(key)) {
+          seen.add(key);
+          cells.push([line[i][0], line[i][1]]);
+        }
+      }
+    }
+  }
+  return cells;
+}
+
+/**
  * Spin a mode and evaluate it in one call. The returned `multiplier` already
  * includes the mode's payout scale, so winnings are simply `floor(bet * multiplier)`.
  */
@@ -125,5 +153,6 @@ module.exports = {
   spinSymbol,
   spinGrid,
   evaluate,
+  winningCells,
   spin,
 };

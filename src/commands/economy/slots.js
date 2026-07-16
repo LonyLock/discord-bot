@@ -1,14 +1,15 @@
 'use strict';
-const { SlashCommandBuilder } = require('discord.js');
+const { SlashCommandBuilder, AttachmentBuilder } = require('discord.js');
 const { getBalance, updateBalance, getGuildConfig } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
 const { formatNumber, sleep } = require('../../utils/helpers');
-const { spin, spinSymbol, MODES, ROWS } = require('../../utils/slots');
+const { spin, spinSymbol, winningCells, MODES, ROWS } = require('../../utils/slots');
+const slotrender = require('../../services/slotrender');
 const { t } = require('../../i18n');
 
 const DIVIDER = '━━━━━━━━━━━━━';
-const STEP_MS = 650; // delay between reveal frames
+const STEP_MS = 650; // delay between text-fallback reveal frames
 
 /**
  * Render a grid to a string, revealing only the first `locked` columns as their
@@ -59,26 +60,54 @@ module.exports = {
     const newWallet = bal.wallet + net;
 
     const header = t(gid, 'econ.slots.header', { mode: label, sym, bet: formatNumber(bet) });
-    const frame = (locked, status, color) => Embed.base()
-      .setColor(color)
-      .setDescription(`${header}\n${render(result.grid, locked)}\n${status}`);
+    const resultLine = winnings > 0
+      ? t(gid, 'econ.slots.win', { sym, amount: formatNumber(winnings), lines: result.lines.map((l) => `${l.symbol}×${l.count}`).join(' · ') })
+      : t(gid, 'econ.slots.lose', { sym, amount: formatNumber(bet) });
+    const balanceLine = t(gid, 'econ.slots.balance', { sym, balance: formatNumber(newWallet) });
+    const resultColor = winnings > 0 ? config.brand.successColor : config.brand.errorColor;
 
-    // Reel-by-reel reveal: columns lock in one at a time, left to right.
-    await interaction.reply({ embeds: [frame(0, t(gid, 'econ.slots.spinning'), config.brand.color)] });
-    const cols = result.grid[0].length;
-    for (let locked = 1; locked <= cols; locked++) {
-      await sleep(STEP_MS);
-      const final = locked === cols;
-      let status = t(gid, 'econ.slots.spinning');
-      let color = config.brand.color;
-      if (final) {
-        color = winnings > 0 ? config.brand.successColor : config.brand.errorColor;
-        const line = winnings > 0
-          ? t(gid, 'econ.slots.win', { sym, amount: formatNumber(winnings), lines: result.lines.map((l) => `${l.symbol}×${l.count}`).join(' · ') })
-          : t(gid, 'econ.slots.lose', { sym, amount: formatNumber(bet) });
-        status = `${line}\n${t(gid, 'econ.slots.balance', { sym, balance: formatNumber(newWallet) })}`;
-      }
-      await interaction.editReply({ embeds: [frame(locked, status, color)] });
+    // Preferred: an animated GIF of the spin. Falls back to a text animation if
+    // the optional canvas/GIF stack is unavailable.
+    if (slotrender.isAvailable()) {
+      await interaction.deferReply();
+      try {
+        const gif = await slotrender.generate({
+          grid: result.grid,
+          winCells: winningCells(result.grid),
+          accent: config.brand.color,
+        });
+        if (gif) {
+          const file = new AttachmentBuilder(gif, { name: 'spin.gif' });
+          const embed = Embed.base()
+            .setColor(resultColor)
+            .setDescription(`${header}\n${resultLine}\n${balanceLine}`)
+            .setImage('attachment://spin.gif');
+          return interaction.editReply({ embeds: [embed], files: [file] });
+        }
+      } catch { /* fall through to the text animation */ }
     }
+
+    return textAnimation(interaction, { result, header, resultLine, balanceLine, resultColor });
   },
 };
+
+/** Reel-by-reel text animation: columns lock in one at a time, left to right. */
+async function textAnimation(interaction, { result, header, resultLine, balanceLine, resultColor }) {
+  const gid = interaction.guild.id;
+  const frame = (locked, status, color) => Embed.base()
+    .setColor(color)
+    .setDescription(`${header}\n${render(result.grid, locked)}\n${status}`);
+
+  const first = frame(0, t(gid, 'econ.slots.spinning'), config.brand.color);
+  if (interaction.deferred || interaction.replied) await interaction.editReply({ embeds: [first] });
+  else await interaction.reply({ embeds: [first] });
+
+  const cols = result.grid[0].length;
+  for (let locked = 1; locked <= cols; locked++) {
+    await sleep(STEP_MS);
+    const final = locked === cols;
+    const status = final ? `${resultLine}\n${balanceLine}` : t(gid, 'econ.slots.spinning');
+    const color = final ? resultColor : config.brand.color;
+    await interaction.editReply({ embeds: [frame(locked, status, color)] });
+  }
+}
