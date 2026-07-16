@@ -3,6 +3,7 @@ const { SlashCommandBuilder } = require('discord.js');
 const { db } = require('../../database/db');
 const Embed = require('../../utils/embed');
 const { parseDuration, formatDuration, relative } = require('../../utils/time');
+const { t } = require('../../i18n');
 
 const insertReminder = db.prepare('INSERT INTO reminders (user_id, channel_id, guild_id, message, remind_at, created_at) VALUES (?, ?, ?, ?, ?, ?)');
 const listReminders = db.prepare('SELECT * FROM reminders WHERE user_id = ? ORDER BY remind_at ASC LIMIT 10');
@@ -20,22 +21,23 @@ module.exports = {
     .addSubcommand((s) => s.setName('delete').setDescription('Delete a reminder')
       .addIntegerOption((o) => o.setName('id').setDescription('Reminder ID').setRequired(true))),
   async execute(interaction) {
+    const gid = interaction.guild?.id;
     const sub = interaction.options.getSubcommand();
     if (sub === 'me') {
       const ms = parseDuration(interaction.options.getString('when'));
-      if (!ms || ms < 10000 || ms > 31536000000) return interaction.reply({ embeds: [Embed.error('Provide a duration between 10s and 1 year.')], ephemeral: true });
+      if (!ms || ms < 10000 || ms > 31536000000) return interaction.reply({ embeds: [Embed.error(t(gid, 'util.remind.invalid_duration'))], ephemeral: true });
       const message = interaction.options.getString('message');
       const remindAt = Date.now() + ms;
       insertReminder.run(interaction.user.id, interaction.channel.id, interaction.guild?.id || null, message, remindAt, Date.now());
-      return interaction.reply({ embeds: [Embed.success(`I'll remind you ${relative(remindAt)} (in ${formatDuration(ms)}):\n> ${message}`)] });
+      return interaction.reply({ embeds: [Embed.success(t(gid, 'util.remind.set', { when: relative(remindAt), duration: formatDuration(ms), message }))] });
     }
     if (sub === 'list') {
       const rows = listReminders.all(interaction.user.id);
-      if (!rows.length) return interaction.reply({ embeds: [Embed.info('⏰ Reminders', 'You have no active reminders.')], ephemeral: true });
-      return interaction.reply({ embeds: [Embed.info('⏰ Your Reminders', rows.map((r) => `**#${r.id}** • ${relative(r.remind_at)}\n> ${r.message}`).join('\n\n'))], ephemeral: true });
+      if (!rows.length) return interaction.reply({ embeds: [Embed.info(t(gid, 'util.remind.title'), t(gid, 'util.remind.none'))], ephemeral: true });
+      return interaction.reply({ embeds: [Embed.info(t(gid, 'util.remind.title_your'), rows.map((r) => `**#${r.id}** • ${relative(r.remind_at)}\n> ${r.message}`).join('\n\n'))], ephemeral: true });
     }
     const id = interaction.options.getInteger('id');
     const res = delReminder.run(id, interaction.user.id);
-    return interaction.reply({ embeds: [res.changes ? Embed.success(`Deleted reminder #${id}.`) : Embed.error('No reminder with that ID.')], ephemeral: true });
+    return interaction.reply({ embeds: [res.changes ? Embed.success(t(gid, 'util.remind.deleted', { id })) : Embed.error(t(gid, 'util.remind.not_found'))], ephemeral: true });
   },
 };

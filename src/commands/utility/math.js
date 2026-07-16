@@ -1,6 +1,7 @@
 'use strict';
 const { SlashCommandBuilder } = require('discord.js');
 const Embed = require('../../utils/embed');
+const { t } = require('../../i18n');
 
 /** Safe arithmetic evaluator (no eval) — supports + - * / % ^ and parentheses. */
 function evaluate(expr) {
@@ -43,13 +44,14 @@ module.exports = {
     .setDescription('Evaluate a math expression')
     .addStringOption((o) => o.setName('expression').setDescription('e.g. (2 + 3) * 4 ^ 2').setRequired(true)),
   async execute(interaction) {
+    const gid = interaction.guild?.id;
     const expr = interaction.options.getString('expression');
     try {
       const result = evaluate(expr);
       if (!isFinite(result)) throw new Error('Result is not finite');
-      return interaction.reply({ embeds: [Embed.info('🧮 Calculator', `\`${expr}\` = **${result}**`)] });
+      return interaction.reply({ embeds: [Embed.info(t(gid, 'util.math.title'), t(gid, 'util.math.result', { expr, result }))] });
     } catch (e) {
-      return interaction.reply({ embeds: [Embed.error(`Could not evaluate: ${e.message}`)], ephemeral: true });
+      return interaction.reply({ embeds: [Embed.error(t(gid, 'util.math.error', { error: e.message }))], ephemeral: true });
     }
   },
 };
