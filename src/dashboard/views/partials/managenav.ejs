@@ -1,0 +1,19 @@
+<div class="manage-head">
+  <% if (guild.icon) { %><img src="<%= guild.icon %>" alt="" class="manage-icon" /><% } %>
+  <div>
+    <h1><%= guild.name %></h1>
+    <p class="muted"><%= guild.memberCount %> members &middot; <%= guild.channelCount %> channels &middot; <%= guild.roleCount %> roles</p>
+  </div>
+</div>
+
+<nav class="subnav">
+  <a href="/servers/<%= guild.id %>" class="<%= active === 'settings' ? 'active' : '' %>">⚙️ Settings</a>
+  <a href="/servers/<%= guild.id %>/autoresponders" class="<%= active === 'autoresponders' ? 'active' : '' %>">💬 Auto-Responders</a>
+  <a href="/servers/<%= guild.id %>/badwords" class="<%= active === 'badwords' ? 'active' : '' %>">🚫 Bad Words</a>
+  <a href="/servers/<%= guild.id %>/levelroles" class="<%= active === 'levelroles' ? 'active' : '' %>">🎖️ Level Roles</a>
+  <a href="/servers/<%= guild.id %>/shop" class="<%= active === 'shop' ? 'active' : '' %>">🛒 Shop</a>
+  <a href="/servers/<%= guild.id %>/tags" class="<%= active === 'tags' ? 'active' : '' %>">🏷️ Tags</a>
+  <a href="/servers/<%= guild.id %>/reactionroles" class="<%= active === 'reactionroles' ? 'active' : '' %>">🎭 Reaction Roles</a>
+  <a href="/servers/<%= guild.id %>/commands" class="<%= active === 'commands' ? 'active' : '' %>">⚡ Commands</a>
+  <a href="/servers/<%= guild.id %>/leaderboard" class="<%= active === 'leaderboard' ? 'active' : '' %>">🏆 Leaderboards</a>
+</nav>

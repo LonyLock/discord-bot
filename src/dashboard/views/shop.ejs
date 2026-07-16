@@ -1,0 +1,58 @@
+<%- include('partials/header', { title: guild.name + ' — Shop' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🛒 Add Shop Item</h2>
+  <p class="muted">Members buy items with <code><%= currency %></code> via <code>/buy</code>. If a role is attached, buying grants that role.</p>
+  <form method="POST" action="/servers/<%= guild.id %>/shop" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Name</label><input class="input" name="name" maxlength="80" placeholder="VIP Role" required /></div>
+      <div class="field"><label>Price</label><input class="input input-short" type="number" name="price" min="1" placeholder="1000" required /></div>
+    </div>
+    <div class="field"><label>Description <small class="muted">(optional)</small></label><input class="input" name="description" maxlength="200" placeholder="Stand out with a shiny role" /></div>
+    <div class="field-row">
+      <div class="field" style="flex:1"><label>Role reward <small class="muted">(optional)</small></label>
+        <select name="role" class="input">
+          <option value="none">— None —</option>
+          <% roles.forEach((r) => { %><option value="<%= r.id %>">@<%= r.name %></option><% }) %>
+        </select>
+      </div>
+      <div class="field"><label>Stock <small class="muted">(blank = ∞)</small></label><input class="input input-short" type="number" name="stock" min="0" placeholder="∞" /></div>
+    </div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Add Item</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Items <span class="badge"><%= items.length %></span></h2>
+  <% if (!items.length) { %>
+    <p class="muted">The shop is empty.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>#</th><th>Name</th><th>Price</th><th>Role</th><th>Stock</th><th></th></tr></thead>
+      <tbody>
+        <% items.forEach((it) => { %>
+          <tr>
+            <td><%= it.id %></td>
+            <td><strong><%= it.name %></strong><% if (it.description) { %><br><small class="muted"><%= it.description %></small><% } %></td>
+            <td><%= currency %> <%= it.price.toLocaleString() %></td>
+            <td><%= it.role_id ? (roles.find((r) => r.id === it.role_id) || {}).name ? '@' + roles.find((r) => r.id === it.role_id).name : 'role' : '—' %></td>
+            <td><%= it.stock < 0 ? '∞' : it.stock %></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/shop">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="item_id" value="<%= it.id %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

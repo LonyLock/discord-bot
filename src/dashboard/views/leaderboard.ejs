@@ -1,10 +1,6 @@
 <%- include('partials/header', { title: guild.name + ' Leaderboards' }) %>
 
-<div class="manage-head">
-  <% if (guild.icon) { %><img src="<%= guild.icon %>" alt="" class="manage-icon" /><% } %>
-  <div><h1><%= guild.name %> — Leaderboards</h1></div>
-  <a href="/servers/<%= guild.id %>" class="btn btn-secondary btn-sm">Settings</a>
-</div>
+<%- include('partials/managenav', { guild, active }) %>
 
 <div class="lb-grid">
   <div class="card">

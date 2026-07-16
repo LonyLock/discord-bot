@@ -1,0 +1,44 @@
+<%- include('partials/header', { title: guild.name + ' — Tags' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🏷️ Add / Edit Tag</h2>
+  <p class="muted">Tags are custom text snippets. Call them with <code>/tag show &lt;name&gt;</code> or <code><%= prefix %>&lt;name&gt;</code>. Adding an existing name overwrites it.</p>
+  <form method="POST" action="/servers/<%= guild.id %>/tags" class="settings-form">
+    <input type="hidden" name="_csrf" value="<%= csrf %>" />
+    <input type="hidden" name="_action" value="add" />
+    <div class="field"><label>Name</label><input class="input input-short" name="name" maxlength="50" placeholder="rules" required /></div>
+    <div class="field"><label>Content</label><textarea class="input" name="content" rows="3" maxlength="2000" placeholder="Please read the rules in #rules." required></textarea></div>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Save Tag</button></div>
+  </form>
+</div>
+
+<div class="card">
+  <h2>Tags <span class="badge"><%= tags.length %></span></h2>
+  <% if (!tags.length) { %>
+    <p class="muted">No tags yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Name</th><th>Content</th><th>Uses</th><th></th></tr></thead>
+      <tbody>
+        <% tags.forEach((t) => { %>
+          <tr>
+            <td><code><%= t.name %></code></td>
+            <td class="truncate-cell"><%= t.content %></td>
+            <td><%= t.uses %></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/tags">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="name" value="<%= t.name %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

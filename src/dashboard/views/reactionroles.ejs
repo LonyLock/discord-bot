@@ -1,0 +1,41 @@
+<%- include('partials/header', { title: guild.name + ' — Reaction Roles' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="card">
+  <h2>🎭 Reaction Roles</h2>
+  <p class="muted">
+    Creating reaction roles requires the bot to post a message and react to it, so use
+    <code>/reactionrole create</code> in Discord to set them up. You can review and remove existing ones here.
+  </p>
+</div>
+
+<div class="card">
+  <h2>Configured <span class="badge"><%= reactionRoles.length %></span></h2>
+  <% if (!reactionRoles.length) { %>
+    <p class="muted">No reaction roles configured yet.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>Emoji</th><th>Role</th><th>Message</th><th></th></tr></thead>
+      <tbody>
+        <% reactionRoles.forEach((rr) => { %>
+          <tr>
+            <td><%= /^\d+$/.test(rr.emoji) ? '(custom)' : rr.emoji %></td>
+            <td>@<%= rr.roleName %></td>
+            <td><a href="<%= rr.link %>" target="_blank" rel="noopener">Jump ↗</a></td>
+            <td>
+              <form method="POST" action="/servers/<%= guild.id %>/reactionroles">
+                <input type="hidden" name="_csrf" value="<%= csrf %>" />
+                <input type="hidden" name="_action" value="remove" />
+                <input type="hidden" name="message_id" value="<%= rr.message_id %>" />
+                <input type="hidden" name="emoji" value="<%= rr.emoji %>" />
+                <button type="submit" class="btn btn-danger btn-sm">Remove</button>
+              </form>
+            </td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

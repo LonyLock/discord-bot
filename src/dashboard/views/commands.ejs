@@ -1,0 +1,28 @@
+<%- include('partials/header', { title: guild.name + ' — Commands' }) %>
+<%- include('partials/managenav', { guild, active }) %>
+
+<form method="POST" action="/servers/<%= guild.id %>/commands">
+  <input type="hidden" name="_csrf" value="<%= csrf %>" />
+
+  <div class="card">
+    <h2>⚡ Command Toggles</h2>
+    <p class="muted">Uncheck a command to disable it on this server. Core admin commands can't be disabled.</p>
+    <% Object.keys(byCategory).sort().forEach((cat) => { %>
+      <div class="cmd-category">
+        <h3><%= cat.charAt(0).toUpperCase() + cat.slice(1) %></h3>
+        <div class="cmd-grid">
+          <% byCategory[cat].forEach((c) => { %>
+            <label class="cmd-item <%= c.core ? 'cmd-core' : '' %>" title="<%= c.description %>">
+              <input type="checkbox" name="enabled" value="<%= c.name %>" <%= c.enabled ? 'checked' : '' %> <%= c.core ? 'disabled checked' : '' %> />
+              <span>/<%= c.name %></span>
+              <% if (c.core) { %><span class="lock">🔒</span><% } %>
+            </label>
+          <% }) %>
+        </div>
+      </div>
+    <% }) %>
+    <div class="form-actions"><button type="submit" class="btn btn-primary">Save Command Settings</button></div>
+  </div>
+</form>
+
+<%- include('partials/footer') %>

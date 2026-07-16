@@ -23,14 +23,7 @@
   }
 %>
 
-<div class="manage-head">
-  <% if (guild.icon) { %><img src="<%= guild.icon %>" alt="" class="manage-icon" /><% } %>
-  <div>
-    <h1><%= guild.name %></h1>
-    <p class="muted"><%= guild.memberCount %> members &middot; <%= guild.channelCount %> channels &middot; <%= guild.roleCount %> roles</p>
-  </div>
-  <a href="/servers/<%= guild.id %>/leaderboard" class="btn btn-secondary btn-sm">Leaderboards</a>
-</div>
+<%- include('partials/managenav', { guild, active }) %>
 
 <% if (saved) { %><div class="alert alert-success">✅ Settings saved successfully!</div><% } %>
 
@@ -67,6 +60,7 @@
       <textarea class="input" name="goodbye_message" rows="2" placeholder="{user} left the server."><%= cfg.goodbye_message || '' %></textarea>
     </div>
     <div class="field"><label>Autorole (given on join)</label><%- roleSelect('autorole', cfg.autorole, roles) %></div>
+    <div class="field"><label>Mute role <small class="muted">(used by moderation)</small></label><%- roleSelect('mute_role', cfg.mute_role, roles) %></div>
   </div>
 
   <div class="card">
@@ -114,6 +108,21 @@
       <input class="input input-short" type="number" name="starboard_threshold" min="1" value="<%= cfg.starboard_threshold || 3 %>" />
     </div>
     <div class="field"><label>Suggestions channel</label><%- channelSelect('suggestion_channel', cfg.suggestion_channel, textChannels) %></div>
+  </div>
+
+  <div class="card">
+    <h2>🎫 Tickets</h2>
+    <div class="field">
+      <label>Ticket category <small class="muted">(new tickets are created here)</small></label>
+      <select name="ticket_category" class="input">
+        <option value="none">— None —</option>
+        <% categories.forEach((c) => { %>
+          <option value="<%= c.id %>" <%= String(cfg.ticket_category) === String(c.id) ? 'selected' : '' %>>📁 <%= c.name %></option>
+        <% }) %>
+      </select>
+    </div>
+    <div class="field"><label>Support role <small class="muted">(pinged &amp; given access)</small></label><%- roleSelect('ticket_support_role', cfg.ticket_support_role, roles) %></div>
+    <div class="field"><label>Ticket log channel</label><%- channelSelect('ticket_log_channel', cfg.ticket_log_channel, textChannels) %></div>
   </div>
 
   <div class="card">

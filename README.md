@@ -60,10 +60,18 @@ and automatic drawing when the timer expires.
 `fact` · `wyr` · `ship` · `compliment`
 
 ### 🖥️ Web Dashboard
-An optional browser dashboard (embedded in the bot process) for configuring servers without slash commands:
+An optional browser dashboard (embedded in the bot process) for configuring servers without slash commands.
+Near-full parity with the in-Discord commands, organised into tabs:
 - **Discord OAuth2 login** — see only the servers you have *Manage Server* on
-- **Live config editor** — welcome/goodbye, logging channels, autorole, leveling, economy, starboard, suggestions and every automod filter, with channel/role dropdowns pulled live from your server
-- **Per-server leaderboards** — top levels & richest members
+- **Settings** — welcome/goodbye, logging channels + ignore list, autorole, mute role, leveling, economy, starboard, suggestions, tickets (category/support role/log), and every automod filter — with channel/role dropdowns pulled live from your server
+- **Auto-Responders** — add/remove trigger → response rules
+- **Bad Words** — manage the automod word filter
+- **Level Roles** — assign role rewards per level
+- **Shop** — create/remove economy shop items (with role rewards & stock)
+- **Tags** — create/edit/delete custom text tags
+- **Reaction Roles** — review & remove existing reaction roles
+- **Commands** — enable/disable any command per-server (core admin commands locked)
+- **Leaderboards** — top levels & richest members
 - Changes apply **instantly** (the dashboard shares the bot's database and config cache)
 - Responsive dark theme, CSRF-protected forms
 

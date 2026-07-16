@@ -29,6 +29,37 @@ const config = require('../../config.json');
 
 const MANAGE_GUILD = 0x20n;
 const DISCORD_API = 'https://discord.com/api/v10';
+const CORE_COMMANDS = ['config', 'command', 'logignore']; // may never be disabled
+
+/* Prepared statements for the list-based features managed by the dashboard. */
+const q = {
+  badwordsList: db.prepare('SELECT word FROM badwords WHERE guild_id = ? ORDER BY word'),
+  badwordAdd: db.prepare('INSERT OR IGNORE INTO badwords (guild_id, word) VALUES (?, ?)'),
+  badwordDel: db.prepare('DELETE FROM badwords WHERE guild_id = ? AND word = ?'),
+
+  arList: db.prepare('SELECT * FROM autoresponders WHERE guild_id = ? ORDER BY trigger'),
+  arAdd: db.prepare('INSERT OR REPLACE INTO autoresponders (guild_id, trigger, response, match_mode) VALUES (?, ?, ?, ?)'),
+  arDel: db.prepare('DELETE FROM autoresponders WHERE guild_id = ? AND trigger = ?'),
+
+  lrList: db.prepare('SELECT * FROM level_roles WHERE guild_id = ? ORDER BY level'),
+  lrAdd: db.prepare('INSERT OR REPLACE INTO level_roles (guild_id, level, role_id) VALUES (?, ?, ?)'),
+  lrDel: db.prepare('DELETE FROM level_roles WHERE guild_id = ? AND level = ?'),
+
+  shopList: db.prepare('SELECT * FROM shop_items WHERE guild_id = ? ORDER BY price'),
+  shopAdd: db.prepare('INSERT INTO shop_items (guild_id, name, description, price, role_id, stock) VALUES (?, ?, ?, ?, ?, ?)'),
+  shopDel: db.prepare('DELETE FROM shop_items WHERE guild_id = ? AND id = ?'),
+
+  tagList: db.prepare('SELECT name, content, uses FROM tags WHERE guild_id = ? ORDER BY name'),
+  tagAdd: db.prepare('INSERT OR REPLACE INTO tags (guild_id, name, content, author_id, uses, created) VALUES (?, ?, ?, ?, 0, ?)'),
+  tagDel: db.prepare('DELETE FROM tags WHERE guild_id = ? AND name = ?'),
+
+  disList: db.prepare('SELECT command FROM disabled_commands WHERE guild_id = ?'),
+  disAdd: db.prepare('INSERT OR IGNORE INTO disabled_commands (guild_id, command) VALUES (?, ?)'),
+  disDel: db.prepare('DELETE FROM disabled_commands WHERE guild_id = ? AND command = ?'),
+
+  rrList: db.prepare('SELECT * FROM reaction_roles WHERE guild_id = ?'),
+  rrDel: db.prepare('DELETE FROM reaction_roles WHERE message_id = ? AND emoji = ?'),
+};
 
 function hasManageGuild(guild) {
   if (guild.owner) return true;
@@ -69,7 +100,6 @@ function start(client) {
     })
   );
 
-  // Shared template locals.
   app.use((req, res, next) => {
     res.locals.user = req.session.user || null;
     res.locals.brand = config.brand;
@@ -82,6 +112,54 @@ function start(client) {
 
   const requireAuth = (req, res, next) => (req.session.user ? next() : res.redirect('/login'));
 
+  /* --------------------------- helpers --------------------------- */
+  const newCsrf = (req) => (req.session.csrf = crypto.randomBytes(16).toString('hex'));
+  const badCsrf = (req) => !req.body._csrf || req.body._csrf !== req.session.csrf;
+
+  // Resolve + authorize a guild for the current session. Returns the live
+  // discord.js Guild, or null after having already sent a response.
+  function resolveGuild(req, res) {
+    const guildId = req.params.id;
+    const sessionGuild = (req.session.guilds || []).find((g) => g.id === guildId);
+    if (!sessionGuild) {
+      res.status(403).render('error', { code: 403, message: 'You do not manage that server.' });
+      return null;
+    }
+    const guild = client.guilds.cache.get(guildId);
+    if (!guild) {
+      res.render('invite', { guild: sessionGuild });
+      return null;
+    }
+    return guild;
+  }
+
+  function guildLists(guild) {
+    const textChannels = guild.channels.cache
+      .filter((c) => c.type === 0 || c.type === 5)
+      .sort((a, b) => a.rawPosition - b.rawPosition)
+      .map((c) => ({ id: c.id, name: c.name }));
+    const roles = guild.roles.cache
+      .filter((r) => r.id !== guild.id && !r.managed)
+      .sort((a, b) => b.position - a.position)
+      .map((r) => ({ id: r.id, name: r.name, color: r.hexColor }));
+    const categories = guild.channels.cache
+      .filter((c) => c.type === 4)
+      .map((c) => ({ id: c.id, name: c.name }));
+    return { textChannels, roles, categories };
+  }
+
+  const guildMeta = (guild) => ({
+    id: guild.id,
+    name: guild.name,
+    icon: guild.iconURL({ size: 128 }),
+    memberCount: guild.memberCount,
+    channelCount: guild.channels.cache.size,
+    roleCount: guild.roles.cache.size,
+  });
+
+  const orNull = (v) => (v && v !== 'none' ? v : null);
+  const bool = (v) => (v === 'on' || v === 'true' || v === '1' ? 1 : 0);
+
   /* ---------------------------- Routes ---------------------------- */
   app.get('/', (req, res) => {
     res.render('index', {
@@ -93,7 +171,6 @@ function start(client) {
     });
   });
 
-  // Begin OAuth.
   app.get('/login', (req, res) => {
     const state = crypto.randomBytes(16).toString('hex');
     req.session.state = state;
@@ -106,7 +183,6 @@ function start(client) {
 
   app.get('/logout', (req, res) => req.session.destroy(() => res.redirect('/')));
 
-  // OAuth callback.
   app.get('/callback', async (req, res) => {
     const { code, state } = req.query;
     if (!code || !state || state !== req.session.state) {
@@ -150,76 +226,41 @@ function start(client) {
     }
   });
 
-  // Server selector.
   app.get('/servers', requireAuth, (req, res) => {
     const managed = (req.session.guilds || []).map((g) => ({
       ...g,
       botPresent: client.guilds.cache.has(g.id),
-      iconUrl: g.icon
-        ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png`
-        : null,
+      iconUrl: g.icon ? `https://cdn.discordapp.com/icons/${g.id}/${g.icon}.png` : null,
     }));
     managed.sort((a, b) => Number(b.botPresent) - Number(a.botPresent) || a.name.localeCompare(b.name));
     res.render('servers', { guilds: managed });
   });
 
-  // Manage a single guild.
+  /* ----- Main settings ----- */
   app.get('/servers/:id', requireAuth, (req, res) => {
-    const guildId = req.params.id;
-    const sessionGuild = (req.session.guilds || []).find((g) => g.id === guildId);
-    if (!sessionGuild) return res.status(403).render('error', { code: 403, message: 'You do not manage that server.' });
-
-    const guild = client.guilds.cache.get(guildId);
-    if (!guild) {
-      return res.render('invite', { guild: sessionGuild });
-    }
-
-    const cfg = getGuildConfig(guildId);
-    const textChannels = guild.channels.cache
-      .filter((c) => c.type === 0 || c.type === 5)
-      .sort((a, b) => a.rawPosition - b.rawPosition)
-      .map((c) => ({ id: c.id, name: c.name }));
-    const roles = guild.roles.cache
-      .filter((r) => r.id !== guild.id && !r.managed)
-      .sort((a, b) => b.position - a.position)
-      .map((r) => ({ id: r.id, name: r.name, color: r.hexColor }));
-    const categories = guild.channels.cache
-      .filter((c) => c.type === 4)
-      .map((c) => ({ id: c.id, name: c.name }));
-
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const { textChannels, roles, categories } = guildLists(guild);
     res.render('manage', {
-      guild: {
-        id: guild.id,
-        name: guild.name,
-        icon: guild.iconURL({ size: 128 }),
-        memberCount: guild.memberCount,
-        channelCount: guild.channels.cache.size,
-        roleCount: guild.roles.cache.size,
-      },
-      cfg,
+      active: 'settings',
+      guild: guildMeta(guild),
+      cfg: getGuildConfig(guild.id),
       textChannels,
       roles,
       categories,
-      logIgnored: listIgnoredLogChannels(guildId),
+      logIgnored: listIgnoredLogChannels(guild.id),
       saved: req.query.saved === '1',
-      csrf: (req.session.csrf = crypto.randomBytes(16).toString('hex')),
+      csrf: newCsrf(req),
     });
   });
 
-  // Save guild settings.
   app.post('/servers/:id', requireAuth, (req, res) => {
-    const guildId = req.params.id;
-    const sessionGuild = (req.session.guilds || []).find((g) => g.id === guildId);
-    if (!sessionGuild) return res.status(403).render('error', { code: 403, message: 'You do not manage that server.' });
-    if (!req.body._csrf || req.body._csrf !== req.session.csrf) {
-      return res.status(403).render('error', { code: 403, message: 'Invalid form token. Please reload and try again.' });
-    }
-
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token. Please reload and try again.' });
     const b = req.body;
-    const orNull = (v) => (v && v !== 'none' ? v : null);
-    const bool = (v) => (v === 'on' || v === 'true' || v === '1' ? 1 : 0);
 
-    setGuildConfig(guildId, {
+    setGuildConfig(guild.id, {
       prefix: (b.prefix || config.defaults.prefix).slice(0, 5),
       welcome_enabled: bool(b.welcome_enabled),
       welcome_channel: orNull(b.welcome_channel),
@@ -228,6 +269,7 @@ function start(client) {
       goodbye_channel: orNull(b.goodbye_channel),
       goodbye_message: b.goodbye_message?.slice(0, 1500) || null,
       autorole: orNull(b.autorole),
+      mute_role: orNull(b.mute_role),
       mod_log_channel: orNull(b.mod_log_channel),
       message_log_channel: orNull(b.message_log_channel),
       join_log_channel: orNull(b.join_log_channel),
@@ -239,6 +281,9 @@ function start(client) {
       starboard_channel: orNull(b.starboard_channel),
       starboard_threshold: Math.max(1, parseInt(b.starboard_threshold, 10) || 3),
       suggestion_channel: orNull(b.suggestion_channel),
+      ticket_category: orNull(b.ticket_category),
+      ticket_support_role: orNull(b.ticket_support_role),
+      ticket_log_channel: orNull(b.ticket_log_channel),
       automod_enabled: bool(b.automod_enabled),
       automod_anti_spam: bool(b.automod_anti_spam),
       automod_anti_invite: bool(b.automod_anti_invite),
@@ -248,38 +293,223 @@ function start(client) {
       automod_badwords: bool(b.automod_badwords),
     });
 
-    // Sync the log-ignore list from the multi-select (may be undefined, a
-    // single string, or an array of channel ids).
-    const desired = new Set(
-      [].concat(b.log_ignored || []).filter((v) => v && v !== 'none')
-    );
-    const current = new Set(listIgnoredLogChannels(guildId));
-    for (const id of current) if (!desired.has(id)) unignoreLogChannel(guildId, id);
-    for (const id of desired) if (!current.has(id)) ignoreLogChannel(guildId, id);
+    // Sync log-ignore list from the multi-select.
+    const desired = new Set([].concat(b.log_ignored || []).filter((v) => v && v !== 'none'));
+    const current = new Set(listIgnoredLogChannels(guild.id));
+    for (const id of current) if (!desired.has(id)) unignoreLogChannel(guild.id, id);
+    for (const id of desired) if (!current.has(id)) ignoreLogChannel(guild.id, id);
 
-    logger.info(`Dashboard: ${req.session.user.username} updated settings for guild ${guildId}`);
-    res.redirect(`/servers/${guildId}?saved=1`);
+    logger.info(`Dashboard: ${req.session.user.username} updated settings for guild ${guild.id}`);
+    res.redirect(`/servers/${guild.id}?saved=1`);
   });
 
-  // Per-guild leaderboards (read-only, public-ish but requires login to view server).
-  app.get('/servers/:id/leaderboard', requireAuth, (req, res) => {
-    const guildId = req.params.id;
-    if (!(req.session.guilds || []).some((g) => g.id === guildId)) {
-      return res.status(403).render('error', { code: 403, message: 'You do not manage that server.' });
+  /* ----- Bad-words filter ----- */
+  app.get('/servers/:id/badwords', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    res.render('badwords', {
+      active: 'badwords',
+      guild: guildMeta(guild),
+      words: q.badwordsList.all(guild.id).map((r) => r.word),
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/badwords', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    if (req.body._action === 'add' && req.body.word) {
+      req.body.word.split(',').map((w) => w.trim().toLowerCase()).filter(Boolean).slice(0, 50)
+        .forEach((w) => q.badwordAdd.run(guild.id, w.slice(0, 100)));
+    } else if (req.body._action === 'remove' && req.body.word) {
+      q.badwordDel.run(guild.id, req.body.word);
     }
-    const guild = client.guilds.cache.get(guildId);
-    const levels = db
-      .prepare('SELECT user_id, level, total_xp FROM levels WHERE guild_id = ? ORDER BY total_xp DESC LIMIT 15')
-      .all(guildId);
-    const economy = db
-      .prepare('SELECT user_id, (wallet + bank) AS total FROM economy WHERE guild_id = ? ORDER BY total DESC LIMIT 15')
-      .all(guildId);
-    const resolve = (id) => {
-      const m = guild?.members.cache.get(id);
-      return m ? m.user.username : id;
-    };
+    res.redirect(`/servers/${guild.id}/badwords`);
+  });
+
+  /* ----- Auto-responders ----- */
+  app.get('/servers/:id/autoresponders', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    res.render('autoresponders', {
+      active: 'autoresponders',
+      guild: guildMeta(guild),
+      responders: q.arList.all(guild.id),
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/autoresponders', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const b = req.body;
+    if (b._action === 'add' && b.trigger && b.response) {
+      const mode = ['contains', 'exact', 'startswith'].includes(b.match) ? b.match : 'contains';
+      q.arAdd.run(guild.id, b.trigger.toLowerCase().slice(0, 100), b.response.slice(0, 1500), mode);
+    } else if (b._action === 'remove' && b.trigger) {
+      q.arDel.run(guild.id, b.trigger);
+    }
+    res.redirect(`/servers/${guild.id}/autoresponders`);
+  });
+
+  /* ----- Level roles ----- */
+  app.get('/servers/:id/levelroles', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const { roles } = guildLists(guild);
+    res.render('levelroles', {
+      active: 'levelroles',
+      guild: guildMeta(guild),
+      roles,
+      levelRoles: q.lrList.all(guild.id),
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/levelroles', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const b = req.body;
+    if (b._action === 'add' && b.level && b.role) {
+      const level = Math.max(1, Math.min(1000, parseInt(b.level, 10) || 1));
+      q.lrAdd.run(guild.id, level, b.role);
+    } else if (b._action === 'remove' && b.level) {
+      q.lrDel.run(guild.id, parseInt(b.level, 10));
+    }
+    res.redirect(`/servers/${guild.id}/levelroles`);
+  });
+
+  /* ----- Economy shop ----- */
+  app.get('/servers/:id/shop', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const { roles } = guildLists(guild);
+    res.render('shop', {
+      active: 'shop',
+      guild: guildMeta(guild),
+      roles,
+      items: q.shopList.all(guild.id),
+      currency: config.economy.currencySymbol,
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/shop', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const b = req.body;
+    if (b._action === 'add' && b.name && b.price) {
+      const price = Math.max(1, parseInt(b.price, 10) || 1);
+      const stock = b.stock ? Math.max(0, parseInt(b.stock, 10)) : -1;
+      q.shopAdd.run(guild.id, b.name.slice(0, 80), b.description?.slice(0, 200) || null, price, orNull(b.role), stock);
+    } else if (b._action === 'remove' && b.item_id) {
+      q.shopDel.run(guild.id, parseInt(b.item_id, 10));
+    }
+    res.redirect(`/servers/${guild.id}/shop`);
+  });
+
+  /* ----- Tags ----- */
+  app.get('/servers/:id/tags', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    res.render('tags', {
+      active: 'tags',
+      guild: guildMeta(guild),
+      tags: q.tagList.all(guild.id),
+      prefix: getGuildConfig(guild.id).prefix || config.defaults.prefix,
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/tags', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    const b = req.body;
+    if (b._action === 'add' && b.name && b.content) {
+      const name = b.name.toLowerCase().replace(/\s+/g, '-').slice(0, 50);
+      q.tagAdd.run(guild.id, name, b.content.slice(0, 2000), req.session.user.id, Date.now());
+    } else if (b._action === 'remove' && b.name) {
+      q.tagDel.run(guild.id, b.name);
+    }
+    res.redirect(`/servers/${guild.id}/tags`);
+  });
+
+  /* ----- Command enable/disable ----- */
+  app.get('/servers/:id/commands', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const disabled = new Set(q.disList.all(guild.id).map((r) => r.command));
+    const byCategory = {};
+    for (const cmd of client.commands.values()) {
+      const cat = cmd.category || 'other';
+      (byCategory[cat] ||= []).push({
+        name: cmd.data.name,
+        description: cmd.data.description,
+        enabled: !disabled.has(cmd.data.name),
+        core: CORE_COMMANDS.includes(cmd.data.name),
+      });
+    }
+    for (const cat of Object.keys(byCategory)) byCategory[cat].sort((a, b) => a.name.localeCompare(b.name));
+    res.render('commands', {
+      active: 'commands',
+      guild: guildMeta(guild),
+      byCategory,
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/commands', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    // Checked boxes (name in body) = enabled; everything else = disabled.
+    const enabled = new Set([].concat(req.body.enabled || []));
+    for (const cmd of client.commands.values()) {
+      const name = cmd.data.name;
+      if (CORE_COMMANDS.includes(name)) { q.disDel.run(guild.id, name); continue; }
+      if (enabled.has(name)) q.disDel.run(guild.id, name);
+      else q.disAdd.run(guild.id, name);
+    }
+    logger.info(`Dashboard: ${req.session.user.username} updated command toggles for guild ${guild.id}`);
+    res.redirect(`/servers/${guild.id}/commands`);
+  });
+
+  /* ----- Reaction roles (list + remove) ----- */
+  app.get('/servers/:id/reactionroles', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const rows = q.rrList.all(guild.id).map((r) => ({
+      ...r,
+      link: `https://discord.com/channels/${guild.id}/${r.channel_id}/${r.message_id}`,
+      roleName: guild.roles.cache.get(r.role_id)?.name || r.role_id,
+      display: /^\d+$/.test(r.emoji) ? `<:e:${r.emoji}>` : r.emoji,
+    }));
+    res.render('reactionroles', {
+      active: 'reactionroles',
+      guild: guildMeta(guild),
+      reactionRoles: rows,
+      csrf: newCsrf(req),
+    });
+  });
+  app.post('/servers/:id/reactionroles', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    if (badCsrf(req)) return res.status(403).render('error', { code: 403, message: 'Invalid form token.' });
+    if (req.body._action === 'remove' && req.body.message_id && req.body.emoji) {
+      q.rrDel.run(req.body.message_id, req.body.emoji);
+    }
+    res.redirect(`/servers/${guild.id}/reactionroles`);
+  });
+
+  /* ----- Leaderboards ----- */
+  app.get('/servers/:id/leaderboard', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const levels = db.prepare('SELECT user_id, level, total_xp FROM levels WHERE guild_id = ? ORDER BY total_xp DESC LIMIT 15').all(guild.id);
+    const economy = db.prepare('SELECT user_id, (wallet + bank) AS total FROM economy WHERE guild_id = ? ORDER BY total DESC LIMIT 15').all(guild.id);
+    const resolve = (id) => guild.members.cache.get(id)?.user.username || id;
     res.render('leaderboard', {
-      guild: { id: guildId, name: guild?.name || 'Server', icon: guild?.iconURL({ size: 128 }) },
+      active: 'leaderboard',
+      guild: guildMeta(guild),
       levels: levels.map((l) => ({ ...l, name: resolve(l.user_id) })),
       economy: economy.map((e) => ({ ...e, name: resolve(e.user_id) })),
       currency: config.economy.currencySymbol,

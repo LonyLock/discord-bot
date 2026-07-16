@@ -168,9 +168,59 @@ select.input-multi option:checked { background: var(--primary) linear-gradient(0
 .lb-name { flex: 1; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .lb-val { color: var(--muted); font-size: .88rem; }
 
+/* Sub-navigation (per-server tabs) */
+.subnav {
+  display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 24px;
+  padding: 6px; background: var(--card); border: 1px solid var(--border); border-radius: var(--radius);
+}
+.subnav a {
+  padding: 8px 14px; border-radius: 8px; color: var(--muted); font-weight: 600; font-size: .88rem; white-space: nowrap;
+}
+.subnav a:hover { background: var(--bg-2); color: var(--text); text-decoration: none; }
+.subnav a.active { background: var(--primary); color: #fff; }
+
+/* Danger button */
+.btn-danger { background: var(--danger); color: #fff; }
+.btn-danger:hover { background: #c93538; }
+
+/* Badge / pills */
+.badge { display: inline-block; background: var(--primary); color: #fff; font-size: .75rem; padding: 1px 9px; border-radius: 20px; vertical-align: middle; margin-left: 6px; }
+.tag-pill { background: var(--bg-2); border: 1px solid var(--border); padding: 2px 9px; border-radius: 6px; font-size: .8rem; }
+
+/* Inline add form */
+.inline-form { display: flex; gap: 10px; margin-top: 12px; }
+.inline-form .input { flex: 1; }
+
+/* Data tables */
+.data-table { width: 100%; border-collapse: collapse; }
+.data-table th, .data-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+.data-table th { color: var(--muted); font-size: .78rem; text-transform: uppercase; letter-spacing: .04em; }
+.data-table tr:last-child td { border-bottom: none; }
+.truncate-cell { max-width: 340px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* Chip list (bad words) */
+.chip-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.chip { display: inline-flex; align-items: center; gap: 6px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 6px 4px 12px; margin: 0; }
+.chip span { font-size: .88rem; }
+.chip-x { background: transparent; border: none; color: var(--danger); cursor: pointer; font-size: .9rem; padding: 2px 6px; border-radius: 50%; }
+.chip-x:hover { background: rgba(237, 66, 69, .15); }
+
+/* Command toggles */
+.cmd-category { margin-bottom: 18px; }
+.cmd-category h3 { font-size: .95rem; color: var(--muted); margin-bottom: 8px; }
+.cmd-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 8px; }
+.cmd-item { display: flex; align-items: center; gap: 8px; background: var(--bg-2); border: 1px solid var(--border); border-radius: 8px; padding: 9px 12px; cursor: pointer; font-size: .9rem; }
+.cmd-item:hover { border-color: var(--primary); }
+.cmd-item input { accent-color: var(--primary); width: 16px; height: 16px; }
+.cmd-item span { flex: 1; }
+.cmd-core { opacity: .7; cursor: not-allowed; }
+.cmd-item .lock { flex: none; font-size: .8rem; }
+
 @media (max-width: 600px) {
   .navbar { padding: 12px 16px; }
   .nav-links { gap: 12px; }
   .nav-user span { display: none; }
   .hero h1 { font-size: 1.9rem; }
+  .inline-form { flex-direction: column; }
+  .truncate-cell { max-width: 140px; }
 }
