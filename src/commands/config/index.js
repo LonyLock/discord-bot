@@ -18,6 +18,7 @@ module.exports = combineCommands({
     require('./counting'),
     require('./logignore'),
     require('./sticky'),
+    require('./modroles'),
     require('./language'),
     require('./suggestion'),
   ],
