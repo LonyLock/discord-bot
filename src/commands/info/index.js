@@ -17,6 +17,7 @@ module.exports = combineCommands({
     require('./channelinfo'),
     require('./membercount'),
     require('./botinfo'),
+    require('./staff'),
   ],
   rename: {
     userinfo: 'user',

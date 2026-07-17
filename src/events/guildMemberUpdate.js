@@ -1,6 +1,7 @@
 'use strict';
 
 const { Events, EmbedBuilder } = require('discord.js');
+const { getGuildConfig } = require('../database/db');
 const { sendLog } = require('../utils/logchannel');
 const config = require('../../config.json');
 
@@ -10,6 +11,26 @@ module.exports = {
     // Fetch partials if needed.
     if (oldMember.partial) await oldMember.fetch().catch(() => {});
     const guild = newMember.guild;
+
+    // Boost started / ended: grant or remove the configured booster role.
+    const wasBoosting = Boolean(oldMember.premiumSinceTimestamp);
+    const isBoosting = Boolean(newMember.premiumSinceTimestamp);
+    if (wasBoosting !== isBoosting) {
+      const cfg = getGuildConfig(guild.id);
+      const role = cfg.boost_role && guild.roles.cache.get(cfg.boost_role);
+      if (role && role.position < guild.members.me.roles.highest.position) {
+        if (isBoosting) newMember.roles.add(role, 'Server boost started').catch(() => {});
+        else newMember.roles.remove(role, 'Server boost ended').catch(() => {});
+      }
+      const embed = new EmbedBuilder()
+        .setColor(isBoosting ? '#f47fff' : config.brand.warnColor)
+        .setAuthor({ name: newMember.user.tag, iconURL: newMember.user.displayAvatarURL() })
+        .setTitle(isBoosting ? '💎 Server Boost Started' : '💎 Server Boost Ended')
+        .setDescription(role ? `Boost role: ${role}` : null)
+        .setFooter({ text: `ID: ${newMember.id}` })
+        .setTimestamp();
+      sendLog(guild, 'join_log_channel', embed);
+    }
 
     // Nickname change.
     if (oldMember.nickname !== newMember.nickname) {

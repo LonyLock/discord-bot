@@ -299,6 +299,7 @@ function start(client) {
       goodbye_message: b.goodbye_message?.slice(0, 1500) || null,
       autorole: orNull(b.autorole),
       mute_role: orNull(b.mute_role),
+      boost_role: orNull(b.boost_role),
       verify_role: orNull(b.verify_role),
       mod_log_channel: orNull(b.mod_log_channel),
       message_log_channel: orNull(b.message_log_channel),

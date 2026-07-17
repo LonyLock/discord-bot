@@ -25,6 +25,8 @@ const command = combineCommands({
     require('./joke'),
     require('./meme'),
     require('./fact'),
+    require('./img'),
+    require('./react'),
   ],
 });
 

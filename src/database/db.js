@@ -38,6 +38,7 @@ CREATE TABLE IF NOT EXISTS guild_config (
   goodbye_enabled     INTEGER DEFAULT 0,
   autorole            TEXT,
   mute_role           TEXT,
+  boost_role          TEXT,
   level_up_channel    TEXT,
   level_up_message    TEXT,
   leveling_enabled    INTEGER DEFAULT 1,
