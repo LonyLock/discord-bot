@@ -2,12 +2,13 @@
 
 const { ContextMenuCommandBuilder, ApplicationCommandType, EmbedBuilder } = require('discord.js');
 const config = require('../../../config.json');
+const { anywhere } = require('../../structures/appcontexts');
 
-// Right-click a member → Apps → "User Info".
+// Right-click a member → Apps → "User Info". User-installable; role info is only
+// shown when it runs in a guild the bot can see.
 module.exports = {
   category: 'context',
-  guildOnly: true,
-  data: new ContextMenuCommandBuilder().setName('User Info').setType(ApplicationCommandType.User),
+  data: anywhere(new ContextMenuCommandBuilder().setName('User Info').setType(ApplicationCommandType.User)),
   async execute(interaction) {
     const user = interaction.targetUser;
     const member = interaction.targetMember;

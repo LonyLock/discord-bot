@@ -4,11 +4,12 @@ const { ContextMenuCommandBuilder, ApplicationCommandType, EmbedBuilder } = requ
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
 const { truncate } = require('../../utils/helpers');
+const { anywhere } = require('../../structures/appcontexts');
 
 // Right-click a message → Apps → "Bookmark": DMs the message to you for later.
 module.exports = {
   category: 'context',
-  data: new ContextMenuCommandBuilder().setName('Bookmark').setType(ApplicationCommandType.Message),
+  data: anywhere(new ContextMenuCommandBuilder().setName('Bookmark').setType(ApplicationCommandType.Message)),
   async execute(interaction) {
     const msg = interaction.targetMessage;
     const embed = new EmbedBuilder()

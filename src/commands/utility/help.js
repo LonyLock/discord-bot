@@ -3,15 +3,16 @@ const { SlashCommandBuilder, EmbedBuilder } = require('discord.js');
 const help = require('../../services/help');
 const Embed = require('../../utils/embed');
 const config = require('../../../config.json');
+const { anywhere } = require('../../structures/appcontexts');
 const { t } = require('../../i18n');
 
 module.exports = {
   category: 'utility',
   cooldown: 3,
-  data: new SlashCommandBuilder()
+  data: anywhere(new SlashCommandBuilder()
     .setName('help')
     .setDescription('Show the interactive help menu or details about a command')
-    .addStringOption((o) => o.setName('command').setDescription('Get details about a specific command').setAutocomplete(true)),
+    .addStringOption((o) => o.setName('command').setDescription('Get details about a specific command').setAutocomplete(true))),
   async execute(interaction, client) {
     const gid = interaction.guild?.id;
     const query = interaction.options.getString('command');

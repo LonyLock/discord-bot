@@ -6,6 +6,7 @@ const config = require('../../../config.json');
 const { formatNumber, sleep } = require('../../utils/helpers');
 const { spin, spinSymbol, winningCells, MODES, ROWS } = require('../../utils/slots');
 const slotrender = require('../../services/slotrender');
+const { anywhere } = require('../../structures/appcontexts');
 const { t } = require('../../i18n');
 
 const DIVIDER = '━━━━━━━━━━━━━';
@@ -30,13 +31,14 @@ function render(grid, locked) {
 
 module.exports = {
   category: 'economy',
-  guildOnly: true,
-  data: new SlashCommandBuilder()
+  // User-installable and DM-friendly: scope the wallet by guild when in a guild,
+  // otherwise by the user (so it also works in DMs / servers the bot isn't in).
+  data: anywhere(new SlashCommandBuilder()
     .setName('slots')
     .setDescription('Spin the 5×3 slot machine')
-    .addIntegerOption((o) => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(10)),
+    .addIntegerOption((o) => o.setName('bet').setDescription('Amount to bet').setRequired(true).setMinValue(10))),
   async execute(interaction) {
-    const gid = interaction.guild.id;
+    const gid = interaction.guildId || `dm-${interaction.user.id}`;
     const userId = interaction.user.id;
     const cfg = getGuildConfig(gid);
     if (!cfg.economy_enabled) return interaction.reply({ embeds: [Embed.error(t(gid, 'econ.disabled'))], ephemeral: true });

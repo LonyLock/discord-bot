@@ -2,11 +2,12 @@
 
 const { ContextMenuCommandBuilder, ApplicationCommandType, EmbedBuilder } = require('discord.js');
 const config = require('../../../config.json');
+const { anywhere } = require('../../structures/appcontexts');
 
 // Right-click a member → Apps → "Avatar".
 module.exports = {
   category: 'context',
-  data: new ContextMenuCommandBuilder().setName('Avatar').setType(ApplicationCommandType.User),
+  data: anywhere(new ContextMenuCommandBuilder().setName('Avatar').setType(ApplicationCommandType.User)),
   async execute(interaction) {
     const user = interaction.targetUser;
     const url = user.displayAvatarURL({ size: 1024 });
