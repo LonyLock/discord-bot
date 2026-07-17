@@ -21,6 +21,7 @@ module.exports = {
   async execute(interaction, client) {
     try {
       if (interaction.isChatInputCommand()) return handleCommand(interaction, client);
+      if (interaction.isContextMenuCommand()) return handleContextMenu(interaction, client);
       if (interaction.isAutocomplete()) return handleAutocomplete(interaction, client);
       if (interaction.isButton()) return handleButton(interaction, client);
       if (interaction.isStringSelectMenu()) return handleSelect(interaction, client);
@@ -123,6 +124,46 @@ async function handleCommand(interaction, client) {
       embeds: [Embed.error(t(gid, 'error.generic'))],
       flags: MessageFlags.Ephemeral,
     };
+    interaction.replied || interaction.deferred
+      ? interaction.followUp(payload).catch(() => {})
+      : interaction.reply(payload).catch(() => {});
+  }
+}
+
+/* ------------------------------------------------------------------ */
+/*  Context-menu (right-click Apps) commands                          */
+/* ------------------------------------------------------------------ */
+async function handleContextMenu(interaction, client) {
+  const command = client.contextMenus.get(interaction.commandName);
+  if (!command) return;
+  const gid = interaction.guild?.id;
+  const isOwner = client.ownerIds.includes(interaction.user.id);
+
+  if (isUserBlacklisted(interaction.user.id) && !isOwner) {
+    return interaction.reply({ embeds: [Embed.error(t(gid, 'error.blacklisted'))], flags: MessageFlags.Ephemeral });
+  }
+  if (command.guildOnly && !interaction.guild) {
+    return interaction.reply({ embeds: [Embed.error(t(gid, 'error.guild_only'))], flags: MessageFlags.Ephemeral });
+  }
+  if (command.permissions && interaction.guild && !isOwner) {
+    const missing = interaction.memberPermissions.missing(command.permissions);
+    if (missing.length) {
+      return interaction.reply({ embeds: [Embed.error(t(gid, 'error.missing_perms', { perms: missing.join(', ') }))], flags: MessageFlags.Ephemeral });
+    }
+  }
+  if (command.botPermissions && interaction.guild) {
+    const missing = interaction.guild.members.me.permissions.missing(command.botPermissions);
+    if (missing.length) {
+      return interaction.reply({ embeds: [Embed.error(t(gid, 'error.bot_missing_perms', { perms: missing.join(', ') }))], flags: MessageFlags.Ephemeral });
+    }
+  }
+
+  trackCommand(command.data.name);
+  try {
+    await command.execute(interaction, client);
+  } catch (err) {
+    logger.error(`Error in context menu "${command.data.name}":`, err);
+    const payload = { embeds: [Embed.error(t(gid, 'error.generic'))], flags: MessageFlags.Ephemeral };
     interaction.replied || interaction.deferred
       ? interaction.followUp(payload).catch(() => {})
       : interaction.reply(payload).catch(() => {});

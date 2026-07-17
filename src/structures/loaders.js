@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { Collection } = require('discord.js');
+const { Collection, ContextMenuCommandBuilder } = require('discord.js');
 const logger = require('../utils/logger');
 
 /** Recursively collect all .js files inside a directory. */
@@ -20,6 +20,7 @@ function walk(dir) {
 /** Load every command file into client.commands. */
 function loadCommands(client) {
   client.commands = new Collection();
+  client.contextMenus = new Collection();
   const dir = path.join(__dirname, '..', 'commands');
   let count = 0;
 
@@ -31,7 +32,10 @@ function loadCommands(client) {
         return;
       }
       command.category = command.category || path.basename(path.dirname(file));
-      client.commands.set(command.data.name, command);
+      // Context-menu (right-click Apps) commands live in their own collection so
+      // they can share a name with a slash command and route separately.
+      if (command.data instanceof ContextMenuCommandBuilder) client.contextMenus.set(command.data.name, command);
+      else client.commands.set(command.data.name, command);
       count++;
     } catch (err) {
       logger.error(`Failed to load command ${path.basename(file)}:`, err.message);
@@ -51,7 +55,7 @@ function loadCommands(client) {
     }
   }
 
-  logger.success(`Loaded ${count} slash commands.`);
+  logger.success(`Loaded ${client.commands.size} slash + ${client.contextMenus.size} context-menu commands.`);
   return client.commands;
 }
 

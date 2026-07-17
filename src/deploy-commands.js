@@ -28,7 +28,9 @@ const clear = args.includes('--clear');
 
 const fakeClient = {};
 const commands = loadCommands(fakeClient);
-const body = clear ? [] : [...commands.values()].map((c) => c.data.toJSON());
+const body = clear
+  ? []
+  : [...commands.values(), ...fakeClient.contextMenus.values()].map((c) => c.data.toJSON());
 
 const rest = new REST({ version: '10' }).setToken(token);
 
