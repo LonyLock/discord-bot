@@ -336,21 +336,41 @@ if (!giveawayCols.has('required_level')) {
   db.exec('ALTER TABLE giveaways ADD COLUMN required_level INTEGER DEFAULT 0');
 }
 
-// Rebuild per-guild tables left over from a much older global schema (missing
-// guild_id). The current schema keys these on (guild_id, …); a plain ALTER can't
-// add a primary-key column, so the old table is renamed aside — preserved as
-// <name>_legacy for manual recovery — and recreated from SCHEMA. Tables that
-// already have guild_id (modlogs, warnings, guild_config, …) are untouched.
-let rebuiltLegacy = false;
-for (const table of ['economy', 'inventory', 'shop_items', 'levels', 'level_roles']) {
-  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
-  if (cols.length && !cols.some((c) => c.name === 'guild_id')) {
+// General schema-drift migration for databases created by a much older version.
+// Using an in-memory copy of the current schema as the source of truth, every
+// existing table is compared against it:
+//   - guild_config is reconciled additively (missing columns are ALTER-added) so
+//     server settings are never lost;
+//   - any other table missing expected columns (e.g. a renamed/added column, or a
+//     guild_id that can't be added via ALTER) is renamed aside to <name>_legacy —
+//     old rows preserved for manual recovery — and recreated from SCHEMA.
+// Tables that already match (modlogs, warnings, …) are left untouched.
+const ref = new Database(':memory:');
+ref.exec(SCHEMA);
+const refTables = ref.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((r) => r.name);
+const rebuilt = [];
+for (const table of refTables) {
+  const expected = ref.prepare(`PRAGMA table_info(${table})`).all();
+  const realCols = db.prepare(`PRAGMA table_info(${table})`).all().map((c) => c.name);
+  if (!realCols.length) continue; // table absent — the CREATE above already made it
+  const missing = expected.filter((c) => !realCols.includes(c.name));
+  if (!missing.length) continue;
+  if (table === 'guild_config') {
+    for (const c of missing) {
+      const def = c.dflt_value != null ? ` DEFAULT ${c.dflt_value}` : '';
+      db.exec(`ALTER TABLE guild_config ADD COLUMN ${c.name} ${c.type}${def}`);
+    }
+  } else {
     db.exec(`DROP TABLE IF EXISTS ${table}_legacy`);
     db.exec(`ALTER TABLE ${table} RENAME TO ${table}_legacy`);
-    rebuiltLegacy = true;
+    rebuilt.push(table);
   }
 }
-if (rebuiltLegacy) db.exec(SCHEMA);
+ref.close();
+if (rebuilt.length) {
+  db.exec(SCHEMA);
+  console.warn(`[db] Migrated ${rebuilt.length} outdated table(s) to the current schema (old rows kept in *_legacy): ${rebuilt.join(', ')}`);
+}
 
 /* ------------------------------------------------------------------ */
 /*  Guild config helpers (with in-memory cache)                       */
