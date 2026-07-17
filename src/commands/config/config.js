@@ -29,14 +29,25 @@ module.exports = {
       .addStringOption((o) => o.setName('message').setDescription('Use {user} {server} {membercount}')))
     .addSubcommand((s) => s.setName('autorole').setDescription('Role automatically given to new members')
       .addRoleOption((o) => o.setName('role').setDescription('Role (omit to disable)')))
+    .addSubcommand((s) => s.setName('boostrole').setDescription('Extra role given to members while they boost the server')
+      .addRoleOption((o) => o.setName('role').setDescription('Role (omit to disable)')))
+    .addSubcommand((s) => s.setName('greetingtest').setDescription('Preview the welcome or goodbye message as if you just joined/left')
+      .addStringOption((o) => o.setName('type').setDescription('Which message').setRequired(true)
+        .addChoices({ name: 'Welcome', value: 'welcome' }, { name: 'Goodbye', value: 'goodbye' })))
     .addSubcommand((s) => s.setName('modlog').setDescription('Channel for moderation logs')
       .addChannelOption((o) => textChannel(o, 'channel', 'Mod-log channel (omit to disable)')))
     .addSubcommand((s) => s.setName('messagelog').setDescription('Channel for edited/deleted message logs')
       .addChannelOption((o) => textChannel(o, 'channel', 'Message-log channel (omit to disable)')))
     .addSubcommand((s) => s.setName('joinlog').setDescription('Channel for join/leave & member-update logs')
       .addChannelOption((o) => textChannel(o, 'channel', 'Join-log channel (omit to disable)')))
-    .addSubcommand((s) => s.setName('serverlog').setDescription('Channel for channel/role structure logs')
+    .addSubcommand((s) => s.setName('serverlog').setDescription('Channel for server changes (name/icon/emoji; fallback for role & channel logs)')
       .addChannelOption((o) => textChannel(o, 'channel', 'Server-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('voicelog').setDescription('Channel for voice join/leave/move logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Voice-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('rolelog').setDescription('Channel for role create/delete logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Role-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('channellog').setDescription('Channel for channel create/delete logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Channel-log channel (omit to disable)')))
     .addSubcommand((s) => s.setName('leveling').setDescription('Enable or disable the leveling system')
       .addBooleanOption((o) => o.setName('enabled').setDescription('Enable/disable').setRequired(true)))
     .addSubcommand((s) => s.setName('levelup').setDescription('Configure level-up announcements')
@@ -96,6 +107,27 @@ module.exports = {
         return interaction.reply({ embeds: [Embed.success(role ? `New members will receive ${role}.` : 'Autorole disabled.')] });
       }
 
+      case 'boostrole': {
+        const role = interaction.options.getRole('role');
+        if (role && role.position >= interaction.guild.members.me.roles.highest.position)
+          return interaction.reply({ embeds: [Embed.error('That role is higher than mine; I could not assign it.')], ephemeral: true });
+        setGuildConfig(gid, { boost_role: role?.id || null });
+        return interaction.reply({ embeds: [Embed.success(role ? `Boosters will receive ${role} while boosting.` : 'Boost role disabled.')] });
+      }
+
+      case 'greetingtest': {
+        const type = interaction.options.getString('type');
+        const cfg = getGuildConfig(gid);
+        const { buildWelcomeEmbed, buildGoodbyeEmbed } = require('../../utils/greetings');
+        const embed = type === 'welcome'
+          ? buildWelcomeEmbed(interaction.member, cfg)
+          : buildGoodbyeEmbed(interaction.member, cfg);
+        const enabled = type === 'welcome' ? cfg.welcome_enabled : cfg.goodbye_enabled;
+        const channel = type === 'welcome' ? cfg.welcome_channel : cfg.goodbye_channel;
+        const note = `Preview of the **${type}** message${enabled ? '' : ' (currently **disabled**)'}${channel ? ` → posts in <#${channel}>` : ' — **no channel set**'}.`;
+        return interaction.reply({ content: note, embeds: [embed], ephemeral: true });
+      }
+
       case 'modlog':
         return setChannel(interaction, 'mod_log_channel', 'Moderation log');
       case 'messagelog':
@@ -103,7 +135,13 @@ module.exports = {
       case 'joinlog':
         return setChannel(interaction, 'join_log_channel', 'Join/leave log');
       case 'serverlog':
-        return setChannel(interaction, 'server_log_channel', 'Server structure log');
+        return setChannel(interaction, 'server_log_channel', 'Server log');
+      case 'voicelog':
+        return setChannel(interaction, 'voice_log_channel', 'Voice log');
+      case 'rolelog':
+        return setChannel(interaction, 'role_log_channel', 'Role log');
+      case 'channellog':
+        return setChannel(interaction, 'channel_log_channel', 'Channel log');
 
       case 'leveling': {
         const enabled = interaction.options.getBoolean('enabled');
@@ -167,8 +205,8 @@ function viewConfig(interaction) {
     .setTitle(`⚙️ Configuration — ${interaction.guild.name}`)
     .addFields(
       { name: 'General', value: `Prefix: \`${c.prefix || config.defaults.prefix}\``, inline: false },
-      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}\nServer-log: ${ch(c.server_log_channel)}\nIgnored: ${listIgnoredLogChannels(interaction.guild.id).length} channel(s)`, inline: true },
-      { name: 'Greetings', value: `Welcome ${bool(c.welcome_enabled)}: ${ch(c.welcome_channel)}\nGoodbye ${bool(c.goodbye_enabled)}: ${ch(c.goodbye_channel)}\nAutorole: ${role(c.autorole)}`, inline: true },
+      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}\nVoice-log: ${ch(c.voice_log_channel)}\nRole-log: ${ch(c.role_log_channel)}\nChannel-log: ${ch(c.channel_log_channel)}\nServer-log: ${ch(c.server_log_channel)}\nIgnored: ${listIgnoredLogChannels(interaction.guild.id).length} channel(s)`, inline: true },
+      { name: 'Greetings', value: `Welcome ${bool(c.welcome_enabled)}: ${ch(c.welcome_channel)}\nGoodbye ${bool(c.goodbye_enabled)}: ${ch(c.goodbye_channel)}\nAutorole: ${role(c.autorole)}\nBoost role: ${role(c.boost_role)}`, inline: true },
       { name: 'Systems', value: `Leveling: ${bool(c.leveling_enabled)}\nEconomy: ${bool(c.economy_enabled)}\nAutomod: ${bool(c.automod_enabled)}`, inline: true },
       { name: 'Features', value: `Starboard: ${ch(c.starboard_channel)} (${c.starboard_threshold}⭐)\nSuggestions: ${ch(c.suggestion_channel)}\nTickets: ${c.ticket_category ? `<#${c.ticket_category}>` : '`not set`'}`, inline: true })
     .setFooter({ text: config.brand.footer });

@@ -31,6 +31,25 @@ const truncate = (str, n = 1024) =>
 /** A simple async sleep. */
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
+/** Fetch JSON from a URL with a timeout. Returns null on any failure. */
+async function fetchJson(url, timeoutMs = 8000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const res = await fetch(url, {
+      signal: ctrl.signal,
+      // Some APIs (e.g. Cloudflare-fronted ones) reject undici's default UA.
+      headers: { 'User-Agent': 'DiscordBot (https://github.com/lonylock/discord-bot, 1.0.0)' },
+    });
+    if (!res.ok) return null;
+    return await res.json();
+  } catch {
+    return null;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
 /** Create a text progress bar. */
 function progressBar(current, total, size = 20) {
   const ratio = total === 0 ? 0 : Math.min(current / total, 1);
@@ -38,4 +57,4 @@ function progressBar(current, total, size = 20) {
   return '█'.repeat(filled) + '░'.repeat(size - filled);
 }
 
-module.exports = { clamp, randInt, pick, formatNumber, shuffle, truncate, sleep, progressBar };
+module.exports = { clamp, randInt, pick, formatNumber, shuffle, truncate, sleep, fetchJson, progressBar };

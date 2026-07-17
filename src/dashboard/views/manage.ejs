@@ -69,6 +69,7 @@
     </div>
     <div class="field"><label>Autorole (given on join)</label><%- roleSelect('autorole', cfg.autorole, roles) %></div>
     <div class="field"><label>Mute role <small class="muted">(used by moderation)</small></label><%- roleSelect('mute_role', cfg.mute_role, roles) %></div>
+    <div class="field"><label>Boost role <small class="muted">(given while boosting the server)</small></label><%- roleSelect('boost_role', cfg.boost_role, roles) %></div>
     <div class="field"><label>Verified role <small class="muted">(granted by /verify)</small></label><%- roleSelect('verify_role', cfg.verify_role, roles) %></div>
   </div>
 
@@ -77,7 +78,10 @@
     <div class="field"><label>Moderation log channel</label><%- channelSelect('mod_log_channel', cfg.mod_log_channel, textChannels) %></div>
     <div class="field"><label>Message log (edits &amp; deletes)</label><%- channelSelect('message_log_channel', cfg.message_log_channel, textChannels) %></div>
     <div class="field"><label>Join / leave &amp; member-update log</label><%- channelSelect('join_log_channel', cfg.join_log_channel, textChannels) %></div>
-    <div class="field"><label>Server structure log <small class="muted">(channels &amp; roles created/deleted)</small></label><%- channelSelect('server_log_channel', cfg.server_log_channel, textChannels) %></div>
+    <div class="field"><label>Voice log <small class="muted">(joins / leaves / moves)</small></label><%- channelSelect('voice_log_channel', cfg.voice_log_channel, textChannels) %></div>
+    <div class="field"><label>Role log <small class="muted">(roles created/deleted)</small></label><%- channelSelect('role_log_channel', cfg.role_log_channel, textChannels) %></div>
+    <div class="field"><label>Channel log <small class="muted">(channels created/deleted)</small></label><%- channelSelect('channel_log_channel', cfg.channel_log_channel, textChannels) %></div>
+    <div class="field"><label>Server log <small class="muted">(name/icon/emoji changes; fallback for role &amp; channel logs)</small></label><%- channelSelect('server_log_channel', cfg.server_log_channel, textChannels) %></div>
     <hr class="divider" />
     <div class="field callout">
       <span>🙈 <strong>Ignored channels</strong> — exclude specific channels or whole categories from logging.</span>

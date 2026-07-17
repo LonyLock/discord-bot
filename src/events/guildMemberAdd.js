@@ -4,15 +4,7 @@ const { Events, EmbedBuilder } = require('discord.js');
 const { getGuildConfig } = require('../database/db');
 const config = require('../../config.json');
 const antiraid = require('../services/antiraid');
-
-function render(template, member) {
-  return (template || '')
-    .replace(/{user}/g, `${member}`)
-    .replace(/{username}/g, member.user.username)
-    .replace(/{tag}/g, member.user.tag)
-    .replace(/{server}/g, member.guild.name)
-    .replace(/{membercount}/g, member.guild.memberCount);
-}
+const { buildWelcomeEmbed } = require('../utils/greetings');
 
 module.exports = {
   name: Events.GuildMemberAdd,
@@ -33,16 +25,7 @@ module.exports = {
     if (cfg.welcome_enabled && cfg.welcome_channel) {
       const channel = member.guild.channels.cache.get(cfg.welcome_channel);
       if (channel) {
-        const text = render(cfg.welcome_message || 'Welcome {user} to **{server}**! You are member #{membercount}.', member);
-        const embed = new EmbedBuilder()
-          .setColor(config.brand.successColor)
-          .setAuthor({ name: member.user.tag, iconURL: member.user.displayAvatarURL() })
-          .setTitle('👋 A new member joined!')
-          .setDescription(text)
-          .setThumbnail(member.user.displayAvatarURL({ size: 256 }))
-          .setFooter({ text: `Member #${member.guild.memberCount}` })
-          .setTimestamp();
-        channel.send({ content: `${member}`, embeds: [embed] }).catch(() => {});
+        channel.send({ content: `${member}`, embeds: [buildWelcomeEmbed(member, cfg)] }).catch(() => {});
       }
     }
 
