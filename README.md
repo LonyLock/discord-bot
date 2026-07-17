@@ -7,7 +7,7 @@ It bundles moderation, automod, economy, leveling, tickets, giveaways, reaction 
 and dozens of utility/fun commands — **with no AI dependencies and no external services**. All state is
 stored locally in an embedded SQLite database, so it runs anywhere Node.js does.
 
-> **99 slash commands** across **11 categories**, plus background message-driven systems.
+> **66 slash commands** across **11 categories** (info, fun, roles and config are grouped into subcommands), plus background message-driven systems.
 
 ---
 
@@ -20,14 +20,14 @@ stored locally in an embedded SQLite database, so it runs anywhere Node.js does.
 - Full mod-log embeds + persistent infraction history per user
 
 ### 🤖 Auto-Moderation
-Toggleable per-server filters via `/automod`:
+Toggleable per-server filters via `/config automod`:
 - Anti-spam (rate limiting with auto-timeout)
 - Anti-invite, anti-link, anti-mass-mention, anti-caps
 - Custom bad-words filter
 - Members with *Manage Messages* are automatically exempt
 
 ### 🛡️ Anti-Raid
-Server protection via `/antiraid` (or the dashboard):
+Server protection via `/config antiraid` (or the dashboard):
 - New-account gate — kick/ban/timeout accounts younger than a configurable age
 - Join-burst detection — alerts the mod-log when N members join within 10 seconds
 
@@ -48,7 +48,7 @@ Server protection via `/antiraid` (or the dashboard):
 - Configurable XP curve, anti-spam cooldown, level-up announcements & channel
 
 ### 🌐 Localization (i18n)
-- Per-server language via `/language` (or the dashboard) — ships with **English** and **Russian**
+- Per-server language via `/config language` (or the dashboard) — ships with **English** and **Russian**
 - Add a locale by dropping a JSON file in `src/i18n/locales/`; the framework interpolates `{vars}` and falls back to English
 
 ### 🎫 Tickets
@@ -60,9 +60,9 @@ Server protection via `/antiraid` (or the dashboard):
 role **and level** requirements, and automatic drawing when the timer expires.
 
 ### 🎭 Roles
-`role add/remove` · `reactionrole create/add/remove/list` · `inrole` · per-server **autorole** on join
-- **Button roles** (`/buttonrole`) — modern self-assignable roles via buttons (up to 25 per message), managed from the dashboard too
-- **Verification** (`/verify`) — a one-click button gate that grants a "verified" role to new members
+`/roles manage add|remove` · `/roles reaction create|add|remove|list` · `/roles in` · per-server **autorole** on join
+- **Button roles** (`/roles button`) — modern self-assignable roles via buttons (up to 25 per message), managed from the dashboard too
+- **Verification** (`/roles verify`) — a one-click button gate that grants a "verified" role to new members
 
 ### 🎵 Music
 `play` (YouTube search or URL) · `skip` · `stop` · `queue` · `nowplaying` · `pause` · `loop` · `volume`
@@ -75,10 +75,10 @@ role **and level** requirements, and automatic drawing when the timer expires.
 - **Data export & privacy** — `/export` (admin JSON backup of the server's data) and `/mydata export|delete` (per-user data download / self-service deletion)
 
 ### ℹ️ Information
-`userinfo` · `serverinfo` · `botinfo` · `avatar` · `roleinfo` · `channelinfo` · `membercount` · `servericon`
+All under `/info`: `user` · `server` · `bot` · `avatar` · `role` · `channel` · `members` · `icon`
 
 ### 🎮 Fun
-`8ball` · `roll` · `flip` · `rps` · `trivia` · `guess` · `choose` · `mock` · `reverse` · `joke` ·
+All under `/fun`: `8ball` · `roll` · `flip` · `rps` · `trivia` · `guess` · `choose` · `mock` · `reverse` · `joke` ·
 `fact` · `wyr` · `ship` · `compliment`
 
 ### 🖥️ Web Dashboard
@@ -101,14 +101,14 @@ Near-full parity with the in-Discord commands, organised into tabs:
 - Responsive dark theme, CSRF-protected forms
 
 ### ⚙️ Configuration & Engagement Systems
-- `/config` — one hub for prefix, welcome/goodbye, logging channels, autorole, starboard, suggestions & more
+- `/config server` — one hub for prefix, welcome/goodbye, logging channels, autorole, starboard, suggestions & more (every admin tool now lives under `/config`)
 - **Starboard** — pin popular messages by ⭐ reactions
-- **Suggestions** — `/suggest` + admin approve/reject/consider
+- **Suggestions** — `/suggest` for members + admin review via `/config suggestion`
 - **Auto-responders** — trigger → response (contains / exact / starts-with)
 - **Sticky messages** — keep a note pinned to the bottom of a channel
 - **Counting game** — collaborative counting channel with best-streak tracking
-- **Per-server command toggles** — disable any command with `/command disable`
-- **Welcome/Goodbye** & **join/leave + message edit/delete logging** — logs never ping members, and `/logignore` (or the dashboard) excludes chosen channels/categories from logging
+- **Per-server command toggles** — disable any command with `/config command disable`
+- **Welcome/Goodbye** & **join/leave + message edit/delete logging** — logs never ping members, and `/config logignore` (or the dashboard) excludes chosen channels/categories from logging
 
 ---
 
@@ -205,7 +205,7 @@ Prefer a process manager instead? `pm2 start src/index.js --name nexus-bot` also
 No Discord token is needed to sanity-check the codebase:
 ```bash
 npm run validate   # verifies all commands build, and every event/service loads
-npm test           # unit tests (node:test) for time, leveling, helpers & automod patterns
+npm test           # unit tests (node:test): time, leveling, helpers, automod patterns, slots & command combining
 ```
 A GitHub Actions workflow (`.github/workflows/ci.yml`) runs both on every push and pull request,
 plus a `node --check` syntax pass over all source files.
@@ -233,8 +233,8 @@ discord-bot/
 
 ## 🧩 Configuration
 Global tunables (currency amounts, XP curve, automod thresholds, brand colors) live in
-[`config.json`](./config.json). Per-server settings are managed at runtime through `/config`,
-`/automod`, `/ticket setup`, etc., and persist in the database.
+[`config.json`](./config.json). Per-server settings are managed at runtime through `/config`
+(server, automod, antiraid, …), `/ticket setup`, etc., and persist in the database.
 
 ## 🔒 Notes
 - The bot stores everything locally in `data/bot.db` — **no external database or API keys required** (besides your bot token).
