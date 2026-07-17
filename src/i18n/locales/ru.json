@@ -185,5 +185,8 @@
   "lvl.levelrole.not_set": "Для этого уровня нет награды.",
   "lvl.levelrole.list_title": "🎖️ Награды за уровни",
   "lvl.levelrole.list_entry": "Уровень **{level}** → <@&{role}>",
-  "lvl.levelrole.none": "Награды за уровни не настроены."
+  "lvl.levelrole.none": "Награды за уровни не настроены.",
+  "lvl.levelrole.created": "Создана роль {role} и назначена наградой за **{level} уровень**.",
+  "lvl.levelrole.bad_color": "Неверный цвет. Используйте HEX-код, например `#E74C3C`.",
+  "lvl.levelrole.create_failed": "Не удалось создать роль — проверьте, что у меня есть право **Управление ролями** и моя роль достаточно высоко."
 }

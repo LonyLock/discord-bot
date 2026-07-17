@@ -185,5 +185,8 @@
   "lvl.levelrole.not_set": "No reward set for that level.",
   "lvl.levelrole.list_title": "🎖️ Level Rewards",
   "lvl.levelrole.list_entry": "Level **{level}** → <@&{role}>",
-  "lvl.levelrole.none": "No level rewards configured."
+  "lvl.levelrole.none": "No level rewards configured.",
+  "lvl.levelrole.created": "Created {role} and set it as the reward for **level {level}**.",
+  "lvl.levelrole.bad_color": "Invalid color. Use a hex code like `#E74C3C`.",
+  "lvl.levelrole.create_failed": "I could not create the role — check that I have **Manage Roles** and that my role is high enough."
 }
