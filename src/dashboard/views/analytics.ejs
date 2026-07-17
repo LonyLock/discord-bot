@@ -1,0 +1,73 @@
+<%- include('partials/header', { title: guild.name + ' Analytics' }) %>
+
+<%- include('partials/managenav', { guild, active }) %>
+
+<div class="stats-row">
+  <div class="stat-card"><span class="stat-num"><%= totals.actions.toLocaleString() %></span><span class="stat-label">Mod actions</span></div>
+  <div class="stat-card"><span class="stat-num"><%= totals.actions7.toLocaleString() %></span><span class="stat-label">Last 7 days</span></div>
+  <div class="stat-card"><span class="stat-num"><%= totals.actions30.toLocaleString() %></span><span class="stat-label">Last 30 days</span></div>
+  <div class="stat-card"><span class="stat-num"><%= totals.warnings.toLocaleString() %></span><span class="stat-label">Warnings</span></div>
+</div>
+
+<div class="lb-grid">
+  <div class="card">
+    <h2>🛡️ Top Moderators</h2>
+    <% if (!moderators.length) { %>
+      <p class="muted">No moderation actions recorded yet.</p>
+    <% } else { %>
+      <table class="data-table">
+        <thead><tr><th>#</th><th>Moderator</th><th>Actions</th><th>Warns</th><th>Breakdown</th></tr></thead>
+        <tbody>
+          <% moderators.forEach((m, i) => { %>
+            <tr>
+              <td><%= i + 1 %></td>
+              <td><%= m.name %></td>
+              <td><strong><%= m.total %></strong></td>
+              <td><%= m.warnings %></td>
+              <td><% Object.entries(m.actions).sort((a, b) => b[1] - a[1]).forEach(([a, c]) => { %><span class="badge"><%= a %> <%= c %></span> <% }) %></td>
+            </tr>
+          <% }) %>
+        </tbody>
+      </table>
+    <% } %>
+  </div>
+
+  <div class="card">
+    <h2>📊 Actions by type</h2>
+    <% if (!byAction.length) { %>
+      <p class="muted">No data yet.</p>
+    <% } else { const max = byAction[0].c; %>
+      <% byAction.forEach((a) => { %>
+        <div class="abar-row">
+          <span class="abar-label"><%= a.action %></span>
+          <div class="abar"><span style="width: <%= Math.round((a.c / max) * 100) %>%"></span></div>
+          <span class="abar-val"><%= a.c %></span>
+        </div>
+      <% }) %>
+    <% } %>
+  </div>
+</div>
+
+<div class="card">
+  <h2>🕑 Recent actions</h2>
+  <% if (!recent.length) { %>
+    <p class="muted">No recent actions.</p>
+  <% } else { %>
+    <table class="data-table">
+      <thead><tr><th>When (UTC)</th><th>Action</th><th>Target</th><th>Moderator</th><th>Reason</th></tr></thead>
+      <tbody>
+        <% recent.forEach((r) => { %>
+          <tr>
+            <td><%= new Date(r.timestamp).toISOString().slice(0, 16).replace('T', ' ') %></td>
+            <td><span class="badge"><%= r.action %></span></td>
+            <td><%= r.target %></td>
+            <td><%= r.moderator %></td>
+            <td class="muted"><%= r.reason || '—' %></td>
+          </tr>
+        <% }) %>
+      </tbody>
+    </table>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

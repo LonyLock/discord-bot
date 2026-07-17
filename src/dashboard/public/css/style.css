@@ -233,3 +233,10 @@ select.input-multi option:checked { background: var(--primary) linear-gradient(0
   .inline-form { flex-direction: column; }
   .truncate-cell { max-width: 140px; }
 }
+
+/* --- Analytics bar chart --- */
+.abar-row { display: grid; grid-template-columns: 120px 1fr 52px; align-items: center; gap: 10px; margin: 8px 0; }
+.abar-label { font-size: .85rem; color: var(--muted); text-transform: capitalize; }
+.abar { background: var(--border); border-radius: 6px; height: 10px; overflow: hidden; }
+.abar > span { display: block; height: 100%; border-radius: 6px; background: linear-gradient(90deg, var(--primary), #7b8cff); }
+.abar-val { text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); font-size: .85rem; }
