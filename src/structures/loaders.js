@@ -2,7 +2,7 @@
 
 const fs = require('node:fs');
 const path = require('node:path');
-const { Collection } = require('discord.js');
+const { Collection, ContextMenuCommandBuilder } = require('discord.js');
 const logger = require('../utils/logger');
 
 /** Recursively collect all .js files inside a directory. */
@@ -20,23 +20,42 @@ function walk(dir) {
 /** Load every command file into client.commands. */
 function loadCommands(client) {
   client.commands = new Collection();
+  client.contextMenus = new Collection();
   const dir = path.join(__dirname, '..', 'commands');
   let count = 0;
-  for (const file of walk(dir)) {
+
+  const register = (file) => {
     try {
       const command = require(file);
       if (!command?.data?.name || typeof command.execute !== 'function') {
         logger.warn(`Skipping invalid command file: ${path.basename(file)}`);
-        continue;
+        return;
       }
       command.category = command.category || path.basename(path.dirname(file));
-      client.commands.set(command.data.name, command);
+      // Context-menu (right-click Apps) commands live in their own collection so
+      // they can share a name with a slash command and route separately.
+      if (command.data instanceof ContextMenuCommandBuilder) client.contextMenus.set(command.data.name, command);
+      else client.commands.set(command.data.name, command);
       count++;
     } catch (err) {
       logger.error(`Failed to load command ${path.basename(file)}:`, err.message);
     }
+  };
+
+  // A category folder with an index.js is a combined command: load only the
+  // index (which folds its siblings into subcommands) and skip the parts.
+  for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) {
+      const indexFile = path.join(full, 'index.js');
+      if (fs.existsSync(indexFile)) register(indexFile);
+      else for (const file of walk(full)) register(file);
+    } else if (entry.name.endsWith('.js')) {
+      register(full);
+    }
   }
-  logger.success(`Loaded ${count} slash commands.`);
+
+  logger.success(`Loaded ${client.commands.size} slash + ${client.contextMenus.size} context-menu commands.`);
   return client.commands;
 }
 

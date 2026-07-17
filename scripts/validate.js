@@ -14,7 +14,8 @@ const { loadCommands, walk } = require('../src/structures/loaders');
 let errors = 0;
 const fail = (...m) => { console.error('  ✗', ...m); errors++; };
 
-const commands = loadCommands({});
+const client = {};
+const commands = loadCommands(client);
 const names = new Set();
 for (const [name, cmd] of commands) {
   try {
@@ -28,6 +29,19 @@ for (const [name, cmd] of commands) {
   }
 }
 console.log(`Commands: ${commands.size} loaded, ${names.size} unique names.`);
+
+const ctxNames = new Set();
+for (const [name, cmd] of client.contextMenus) {
+  try {
+    cmd.data.toJSON();
+    if (ctxNames.has(name)) fail(`duplicate context-menu name: ${name}`);
+    ctxNames.add(name);
+    if (typeof cmd.execute !== 'function') fail(`context ${name}: missing execute()`);
+  } catch (e) {
+    fail(`context ${name}: failed to build — ${e.message}`);
+  }
+}
+console.log(`Context menus: ${client.contextMenus.size} loaded.`);
 
 const events = walk(path.join(__dirname, '..', 'src', 'events'));
 for (const f of events) {

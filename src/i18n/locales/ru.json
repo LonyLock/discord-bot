@@ -107,8 +107,11 @@
   "econ.inventory.empty": "У {user} нет предметов.",
   "econ.inventory.title": "🎒 Инвентарь {user}",
   "econ.richest.title": "💰 Богачи на {server}",
-  "econ.slots.win": "**[ {reels} ]**\nВы выиграли **{sym} {amount}** (×{mult})!",
-  "econ.slots.lose": "**[ {reels} ]**\nВы проиграли **{sym} {amount}**. Повезёт в следующий раз!",
+  "econ.slots.header": "🎰 **Слоты** · {mode} · ставка {sym} {bet}",
+  "econ.slots.spinning": "🎲 Крутим барабаны…",
+  "econ.slots.win": "🎉 Вы выиграли **{sym} {amount}**! ({lines})",
+  "econ.slots.lose": "💸 Нет совпадений — вы проиграли **{sym} {amount}**.",
+  "econ.slots.balance": "Кошелёк: **{sym} {balance}**",
   "econ.coinflip.win": "Монета выпала на **{result}**! Вы выиграли **{sym} {amount}**! 🎉",
   "econ.coinflip.lose": "Монета выпала на **{result}**. Вы проиграли **{sym} {amount}**.",
   "util.afk.set": "Статус AFK установлен: {reason}",
@@ -182,5 +185,8 @@
   "lvl.levelrole.not_set": "Для этого уровня нет награды.",
   "lvl.levelrole.list_title": "🎖️ Награды за уровни",
   "lvl.levelrole.list_entry": "Уровень **{level}** → <@&{role}>",
-  "lvl.levelrole.none": "Награды за уровни не настроены."
+  "lvl.levelrole.none": "Награды за уровни не настроены.",
+  "lvl.levelrole.created": "Создана роль {role} и назначена наградой за **{level} уровень**.",
+  "lvl.levelrole.bad_color": "Неверный цвет. Используйте HEX-код, например `#E74C3C`.",
+  "lvl.levelrole.create_failed": "Не удалось создать роль — проверьте, что у меня есть право **Управление ролями** и моя роль достаточно высоко."
 }
