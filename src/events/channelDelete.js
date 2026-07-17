@@ -16,6 +16,6 @@ module.exports = {
       .setDescription(`**${channel.name}** (${TYPES[channel.type] || 'Channel'})`)
       .setFooter({ text: `ID: ${channel.id}` })
       .setTimestamp();
-    sendLog(channel.guild, 'server_log_channel', embed);
+    sendLog(channel.guild, ['channel_log_channel', 'server_log_channel'], embed);
   },
 };

@@ -35,8 +35,14 @@ module.exports = {
       .addChannelOption((o) => textChannel(o, 'channel', 'Message-log channel (omit to disable)')))
     .addSubcommand((s) => s.setName('joinlog').setDescription('Channel for join/leave & member-update logs')
       .addChannelOption((o) => textChannel(o, 'channel', 'Join-log channel (omit to disable)')))
-    .addSubcommand((s) => s.setName('serverlog').setDescription('Channel for channel/role structure logs')
+    .addSubcommand((s) => s.setName('serverlog').setDescription('Channel for server changes (name/icon/emoji; fallback for role & channel logs)')
       .addChannelOption((o) => textChannel(o, 'channel', 'Server-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('voicelog').setDescription('Channel for voice join/leave/move logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Voice-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('rolelog').setDescription('Channel for role create/delete logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Role-log channel (omit to disable)')))
+    .addSubcommand((s) => s.setName('channellog').setDescription('Channel for channel create/delete logs')
+      .addChannelOption((o) => textChannel(o, 'channel', 'Channel-log channel (omit to disable)')))
     .addSubcommand((s) => s.setName('leveling').setDescription('Enable or disable the leveling system')
       .addBooleanOption((o) => o.setName('enabled').setDescription('Enable/disable').setRequired(true)))
     .addSubcommand((s) => s.setName('levelup').setDescription('Configure level-up announcements')
@@ -103,7 +109,13 @@ module.exports = {
       case 'joinlog':
         return setChannel(interaction, 'join_log_channel', 'Join/leave log');
       case 'serverlog':
-        return setChannel(interaction, 'server_log_channel', 'Server structure log');
+        return setChannel(interaction, 'server_log_channel', 'Server log');
+      case 'voicelog':
+        return setChannel(interaction, 'voice_log_channel', 'Voice log');
+      case 'rolelog':
+        return setChannel(interaction, 'role_log_channel', 'Role log');
+      case 'channellog':
+        return setChannel(interaction, 'channel_log_channel', 'Channel log');
 
       case 'leveling': {
         const enabled = interaction.options.getBoolean('enabled');
@@ -167,7 +179,7 @@ function viewConfig(interaction) {
     .setTitle(`⚙️ Configuration — ${interaction.guild.name}`)
     .addFields(
       { name: 'General', value: `Prefix: \`${c.prefix || config.defaults.prefix}\``, inline: false },
-      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}\nServer-log: ${ch(c.server_log_channel)}\nIgnored: ${listIgnoredLogChannels(interaction.guild.id).length} channel(s)`, inline: true },
+      { name: 'Logging', value: `Mod-log: ${ch(c.mod_log_channel)}\nMessage-log: ${ch(c.message_log_channel)}\nJoin-log: ${ch(c.join_log_channel)}\nVoice-log: ${ch(c.voice_log_channel)}\nRole-log: ${ch(c.role_log_channel)}\nChannel-log: ${ch(c.channel_log_channel)}\nServer-log: ${ch(c.server_log_channel)}\nIgnored: ${listIgnoredLogChannels(interaction.guild.id).length} channel(s)`, inline: true },
       { name: 'Greetings', value: `Welcome ${bool(c.welcome_enabled)}: ${ch(c.welcome_channel)}\nGoodbye ${bool(c.goodbye_enabled)}: ${ch(c.goodbye_channel)}\nAutorole: ${role(c.autorole)}`, inline: true },
       { name: 'Systems', value: `Leveling: ${bool(c.leveling_enabled)}\nEconomy: ${bool(c.economy_enabled)}\nAutomod: ${bool(c.automod_enabled)}`, inline: true },
       { name: 'Features', value: `Starboard: ${ch(c.starboard_channel)} (${c.starboard_threshold}⭐)\nSuggestions: ${ch(c.suggestion_channel)}\nTickets: ${c.ticket_category ? `<#${c.ticket_category}>` : '`not set`'}`, inline: true })

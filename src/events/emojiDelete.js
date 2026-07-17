@@ -5,14 +5,14 @@ const { sendLog } = require('../utils/logchannel');
 const config = require('../../config.json');
 
 module.exports = {
-  name: Events.GuildRoleDelete,
-  execute(role) {
+  name: Events.GuildEmojiDelete,
+  execute(emoji) {
     const embed = new EmbedBuilder()
       .setColor(config.brand.errorColor)
-      .setTitle('🗑️ Role Deleted')
-      .setDescription(`**${role.name}**`)
-      .setFooter({ text: `ID: ${role.id}` })
+      .setTitle('😶 Emoji Deleted')
+      .setDescription(`\`:${emoji.name}:\``)
+      .setFooter({ text: `ID: ${emoji.id}` })
       .setTimestamp();
-    sendLog(role.guild, ['role_log_channel', 'server_log_channel'], embed);
+    sendLog(emoji.guild, 'server_log_channel', embed);
   },
 };
