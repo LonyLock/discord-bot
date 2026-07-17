@@ -200,6 +200,16 @@ docker run -d --name nexus-bot --env-file .env -v "$(pwd)/data:/app/data" -p 300
 
 Prefer a process manager instead? `pm2 start src/index.js --name nexus-bot` also works on any host with Node 18+.
 
+### 🪟 Windows autostart & watchdog
+On Windows, [`scripts/windows/`](./scripts/windows) sets the bot (with the embedded
+dashboard and all modules) to **auto-start on boot** and **restart if it crashes**,
+via Task Scheduler. In an elevated PowerShell:
+```powershell
+cd scripts\windows
+powershell -ExecutionPolicy Bypass -File .\install-tasks.ps1
+```
+See [`scripts/windows/README.md`](./scripts/windows/README.md) for details.
+
 ## ✅ Validation & CI
 
 No Discord token is needed to sanity-check the codebase:

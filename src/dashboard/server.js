@@ -635,6 +635,45 @@ function start(client) {
     });
   });
 
+  app.get('/servers/:id/analytics', requireAuth, (req, res) => {
+    const guild = resolveGuild(req, res);
+    if (!guild) return;
+    const gid = guild.id;
+    const now = Date.now();
+    const d7 = now - 7 * 864e5;
+    const d30 = now - 30 * 864e5;
+
+    const count = (sql, ...p) => db.prepare(sql).get(gid, ...p).c;
+    const totals = {
+      actions: count('SELECT COUNT(*) c FROM modlogs WHERE guild_id = ?'),
+      actions7: count('SELECT COUNT(*) c FROM modlogs WHERE guild_id = ? AND timestamp > ?', d7),
+      actions30: count('SELECT COUNT(*) c FROM modlogs WHERE guild_id = ? AND timestamp > ?', d30),
+      warnings: count('SELECT COUNT(*) c FROM warnings WHERE guild_id = ?'),
+    };
+    const byAction = db.prepare('SELECT action, COUNT(*) c FROM modlogs WHERE guild_id = ? GROUP BY action ORDER BY c DESC').all(gid);
+    const modRows = db.prepare('SELECT moderator_id, COUNT(*) total FROM modlogs WHERE guild_id = ? GROUP BY moderator_id ORDER BY total DESC LIMIT 15').all(gid);
+    const actionRows = db.prepare('SELECT moderator_id, action, COUNT(*) c FROM modlogs WHERE guild_id = ? GROUP BY moderator_id, action').all(gid);
+    const warnRows = db.prepare('SELECT moderator_id, COUNT(*) c FROM warnings WHERE guild_id = ? GROUP BY moderator_id').all(gid);
+
+    const breakdown = {};
+    for (const r of actionRows) (breakdown[r.moderator_id] ||= {})[r.action] = r.c;
+    const warnMap = Object.fromEntries(warnRows.map((w) => [w.moderator_id, w.c]));
+    const resolve = (uid) => guild.members.cache.get(uid)?.user.username || uid;
+    const moderators = modRows.map((m) => ({
+      id: m.moderator_id,
+      name: resolve(m.moderator_id),
+      total: m.total,
+      actions: breakdown[m.moderator_id] || {},
+      warnings: warnMap[m.moderator_id] || 0,
+    }));
+    const recent = db
+      .prepare('SELECT action, user_id, moderator_id, reason, timestamp FROM modlogs WHERE guild_id = ? ORDER BY timestamp DESC LIMIT 20')
+      .all(gid)
+      .map((r) => ({ ...r, moderator: resolve(r.moderator_id), target: resolve(r.user_id) }));
+
+    res.render('analytics', { active: 'analytics', guild: guildMeta(guild), totals, byAction, moderators, recent });
+  });
+
   /* ========================= OWNER PANEL ========================= */
   app.get('/owner', requireOwner, (req, res) => {
     const topCommands = db
@@ -657,6 +696,53 @@ function start(client) {
       blacklistedUsers: listBlacklistedUsers().length,
       blacklistedGuilds: listBlacklistedGuilds().length,
     });
+  });
+
+  app.get('/owner/analytics', requireOwner, (req, res) => {
+    const now = Date.now();
+    const d7 = now - 7 * 864e5;
+    const d30 = now - 30 * 864e5;
+    const mapCount = (sql) => Object.fromEntries(db.prepare(sql).all().map((r) => [r.guild_id, r.c]));
+    const modByGuild = mapCount('SELECT guild_id, COUNT(*) c FROM modlogs GROUP BY guild_id');
+    const warnByGuild = mapCount('SELECT guild_id, COUNT(*) c FROM warnings GROUP BY guild_id');
+    const econByGuild = mapCount('SELECT guild_id, COUNT(*) c FROM economy GROUP BY guild_id');
+    const lvlByGuild = mapCount('SELECT guild_id, COUNT(*) c FROM levels GROUP BY guild_id');
+
+    const servers = [...client.guilds.cache.values()]
+      .map((g) => ({
+        id: g.id,
+        name: g.name,
+        icon: g.iconURL({ size: 64 }),
+        members: g.memberCount || 0,
+        modActions: modByGuild[g.id] || 0,
+        warnings: warnByGuild[g.id] || 0,
+        econUsers: econByGuild[g.id] || 0,
+        levelUsers: lvlByGuild[g.id] || 0,
+      }))
+      .sort((a, b) => b.modActions - a.modActions || b.members - a.members);
+
+    const byAction = db.prepare('SELECT action, COUNT(*) c FROM modlogs GROUP BY action ORDER BY c DESC').all();
+    const modRows = db.prepare('SELECT moderator_id, COUNT(*) total FROM modlogs GROUP BY moderator_id ORDER BY total DESC LIMIT 20').all();
+    const actionRows = db.prepare('SELECT moderator_id, action, COUNT(*) c FROM modlogs GROUP BY moderator_id, action').all();
+    const breakdown = {};
+    for (const r of actionRows) (breakdown[r.moderator_id] ||= {})[r.action] = r.c;
+    const resolveUser = (uid) => client.users.cache.get(uid)?.username || uid;
+    const moderators = modRows.map((m) => ({
+      id: m.moderator_id,
+      name: resolveUser(m.moderator_id),
+      total: m.total,
+      actions: breakdown[m.moderator_id] || {},
+    }));
+
+    const totals = {
+      servers: servers.length,
+      members: servers.reduce((a, s) => a + s.members, 0),
+      actions: db.prepare('SELECT COUNT(*) c FROM modlogs').get().c,
+      actions7: db.prepare('SELECT COUNT(*) c FROM modlogs WHERE timestamp > ?').get(d7).c,
+      actions30: db.prepare('SELECT COUNT(*) c FROM modlogs WHERE timestamp > ?').get(d30).c,
+    };
+
+    res.render('owner_analytics', { active: 'analytics', servers, byAction, moderators, totals });
   });
 
   app.get('/owner/servers', requireOwner, (req, res) => {
