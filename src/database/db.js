@@ -23,7 +23,7 @@ db.pragma('foreign_keys = ON');
 /* ------------------------------------------------------------------ */
 /*  Schema                                                            */
 /* ------------------------------------------------------------------ */
-db.exec(`
+const SCHEMA = `
 CREATE TABLE IF NOT EXISTS guild_config (
   guild_id            TEXT PRIMARY KEY,
   prefix              TEXT,
@@ -307,7 +307,8 @@ CREATE TABLE IF NOT EXISTS scheduled_messages (
   created_by  TEXT NOT NULL,
   created_at  INTEGER NOT NULL
 );
-`);
+`;
+db.exec(SCHEMA);
 
 /* ------------------------------------------------------------------ */
 /*  Migrations — add columns introduced after a database already      */
@@ -334,6 +335,22 @@ const giveawayCols = new Set(db.prepare('PRAGMA table_info(giveaways)').all().ma
 if (!giveawayCols.has('required_level')) {
   db.exec('ALTER TABLE giveaways ADD COLUMN required_level INTEGER DEFAULT 0');
 }
+
+// Rebuild per-guild tables left over from a much older global schema (missing
+// guild_id). The current schema keys these on (guild_id, …); a plain ALTER can't
+// add a primary-key column, so the old table is renamed aside — preserved as
+// <name>_legacy for manual recovery — and recreated from SCHEMA. Tables that
+// already have guild_id (modlogs, warnings, guild_config, …) are untouched.
+let rebuiltLegacy = false;
+for (const table of ['economy', 'inventory', 'shop_items', 'levels', 'level_roles']) {
+  const cols = db.prepare(`PRAGMA table_info(${table})`).all();
+  if (cols.length && !cols.some((c) => c.name === 'guild_id')) {
+    db.exec(`DROP TABLE IF EXISTS ${table}_legacy`);
+    db.exec(`ALTER TABLE ${table} RENAME TO ${table}_legacy`);
+    rebuiltLegacy = true;
+  }
+}
+if (rebuiltLegacy) db.exec(SCHEMA);
 
 /* ------------------------------------------------------------------ */
 /*  Guild config helpers (with in-memory cache)                       */
